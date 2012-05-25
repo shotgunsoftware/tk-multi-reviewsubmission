@@ -11,6 +11,6 @@ class TestSgMakeQuicktime(NukeEngineTestBase):
         self.app = self.engine.apps.get(self.app_name)
 
     def test_is_app(self):
-        self.assertIsInstance(self.app, tank.system.application.Application)
+        self.assertIsInstance(self.app, tank.platform.application.Application)
 
 

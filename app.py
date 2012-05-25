@@ -10,7 +10,7 @@ import sys
 import nuke
 import tank
 
-class QuicktimeGenerator(tank.system.Application):
+class QuicktimeGenerator(tank.platform.Application):
 
 
 
@@ -75,7 +75,7 @@ class QuicktimeGenerator(tank.system.Application):
         # pull some metadata out of the context and the file
         template = self.engine.tank.resolve(path)
         fields = template.get_fields(path)
-        context = tank.system.Context.from_path(path)
+        context = tank.platform.Context.from_path(path)
 
         # format the burnins  
         ver = fields.get("version", 0)
