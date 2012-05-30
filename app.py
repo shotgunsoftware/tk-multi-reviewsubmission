@@ -73,9 +73,9 @@ class QuicktimeGenerator(tank.platform.Application):
         self._burnin.node("logo")["file"].setValue(self._logo)
     
         # pull some metadata out of the context and the file
-        template = self.engine.tank.resolve(path)
+        template = self.tank.resolve(path)
         fields = template.get_fields(path)
-        context = tank.platform.Context.from_path(path)
+        context = self.tank.context_from_path(path)
 
         # format the burnins  
         ver = fields.get("version", 0)
