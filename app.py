@@ -58,7 +58,7 @@ class QuicktimeGenerator(tank.platform.Application):
         self._nodes.append(self._src)
         
         # now create the slate/burnin node
-        self._burnin = nuke.nodes.sg_make_quicktime()
+        self._burnin = nuke.nodes.tk_nuke_makequicktime()
         self._burnin.setInput(0, self._src)
         self._nodes.append(self._burnin)
     
