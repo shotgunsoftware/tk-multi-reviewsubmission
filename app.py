@@ -18,6 +18,10 @@ class QuicktimeGenerator(tank.platform.Application):
         
         self._logo = os.path.join(self.disk_location, "resources", "logo.png")
         self._font = os.path.join(self.disk_location, "resources", "liberationsans_regular.ttf")
+        # now transform paths to be forward slashes, otherwise it wont work on windows.
+        # stupid nuke ;(
+        self._font = self._font.replace(os.sep, "/")
+        self._logo = self._logo.replace(os.sep, "/")
 
         self._nodes = []
         self._outputs = []
