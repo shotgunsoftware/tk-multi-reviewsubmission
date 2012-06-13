@@ -141,7 +141,8 @@ class QuicktimeGenerator(tank.platform.Application):
             output.setInput(0, self._burnin)
             
         self._outputs.append(output)
-        output["file"].setValue(path)
+        # make sure we transform all paths to use forward slashes, otherwise nuke wont work....
+        output["file"].setValue(path.replace(os.sep, "/"))
         
         ################################################################
         # example output settings
