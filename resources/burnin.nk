@@ -1,6 +1,13 @@
-#! /Applications/Nuke6.3v4/Nuke6.3v4.app/Contents/MacOS/Nuke6.3v4 -nx
-version 6.3
-Gizmo {
+set cut_paste_input [stack 0]
+version 6.3 v7
+push $cut_paste_input
+Group {
+ name Group1
+ note_font Verdana
+ selected true
+ xpos 68
+ ypos -64
+ mapsize {0.15 0.15}
 }
  Input {
   inputs 0
@@ -66,7 +73,7 @@ Gizmo {
   ypos 236
  }
  Transform {
-  translate {100 {100}}
+  translate {100 100}
   name Transform
   xpos 260
   ypos 277
@@ -79,13 +86,12 @@ Gizmo {
  }
  Text {
   message ""
-  size 100
+  size 65
   leading 0.3
   yjustify center
   Transform 1
   box {300 {"(\[value root.height]/2)-500"} 1800 1389}
   name slate_info
-  selected true
   xpos 171
   ypos 252
  }

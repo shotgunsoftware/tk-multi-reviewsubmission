@@ -17,25 +17,26 @@ class QuicktimeGenerator(tank.platform.Application):
     def init_app(self):
         
         self._logo = os.path.join(self.disk_location, "resources", "logo.png")
+        self._burnin_nk = os.path.join(self.disk_location, "resources", "burnin.nk")
         self._font = os.path.join(self.disk_location, "resources", "liberationsans_regular.ttf")
         # now transform paths to be forward slashes, otherwise it wont work on windows.
         # stupid nuke ;(
         self._font = self._font.replace(os.sep, "/")
         self._logo = self._logo.replace(os.sep, "/")
+        self._burnin_nk = self._burnin_nk.replace(os.sep, "/")
 
-        self._nodes = []
+        self._group = None
         self._outputs = []
         
     def reset(self):
         """
         Delete any nodes created by this app
         """
-        for x in self._outputs:
-            nuke.delete(x)
         self._outputs = []
-        for x in self._nodes:
-            nuke.delete(x)
-        self._nodes = []
+        if self._group:            
+            nuke.delete(self._group)
+            self._group = None
+        
 
     def get_first_frame(self):
         """
@@ -54,60 +55,67 @@ class QuicktimeGenerator(tank.platform.Application):
         Sets up the input for the render
         """
         
-        # create read node
-        self._src = nuke.nodes.Read(name="source", file=path)
-        self._src["on_error"].setValue("black")
-        self._src["first"].setValue(self.get_first_frame())
-        self._src["last"].setValue(self.get_last_frame())
-        self._nodes.append(self._src)
+        # create group where everything happens
+        self._group = nuke.nodes.Group()
         
-        # now create the slate/burnin node
-        self._burnin = nuke.nodes.tk_nuke_makequicktime()
-        self._burnin.setInput(0, self._src)
-        self._nodes.append(self._burnin)
+        # now operate inside this group
+        self._group.begin()
+        try:
+            # create read node
+            read = nuke.nodes.Read(name="source", file=path)
+            read["on_error"].setValue("black")
+            read["first"].setValue(self.get_first_frame())
+            read["last"].setValue(self.get_last_frame())
+            
+            # now create the slate/burnin node
+            burn = nuke.nodePaste(self._burnin_nk) 
+            burn.setInput(0, read)
+        
+            # set the fonts for all text fields
+            burn.node("top_left_text")["font"].setValue(self._font)
+            burn.node("top_right_text")["font"].setValue(self._font)
+            burn.node("bottom_left_text")["font"].setValue(self._font)
+            burn.node("framecounter")["font"].setValue(self._font)
+            burn.node("slate_info")["font"].setValue(self._font)
+        
+            # add the logo
+            burn.node("logo")["file"].setValue(self._logo)
+        
+            # pull some metadata out of the context and the file
+            template = self.tank.template_from_path(path)
+            fields = template.get_fields(path)
+            context = self.tank.context_from_path(path)
     
-        # set the fonts for all text fields
-        self._burnin.node("top_left_text")["font"].setValue(self._font)
-        self._burnin.node("top_right_text")["font"].setValue(self._font)
-        self._burnin.node("bottom_left_text")["font"].setValue(self._font)
-        self._burnin.node("framecounter")["font"].setValue(self._font)
-        self._burnin.node("slate_info")["font"].setValue(self._font)
-    
-        # add the logo
-        self._burnin.node("logo")["file"].setValue(self._logo)
-    
-        # pull some metadata out of the context and the file
-        template = self.tank.template_from_path(path)
-        fields = template.get_fields(path)
-        context = self.tank.context_from_path(path)
-
-        # format the burnins  
-        ver = fields.get("version", 0)
-        if context.task:
-            version = "%s, version %03d" % (context.task["name"], ver)
-        elif context.step:
-            version = "%s, version %03d" % (context.step["name"], ver)
-        else:
-            version = "Version %03d" % ver
+            # format the burnins  
+            ver = fields.get("version", 0)
+            if context.task:
+                version = "%s, version %03d" % (context.task["name"], ver)
+            elif context.step:
+                version = "%s, version %03d" % (context.step["name"], ver)
+            else:
+                version = "Version %03d" % ver
+            
+            burn.node("top_left_text")["message"].setValue(context.project["name"])
+            burn.node("top_right_text")["message"].setValue(context.entity["name"])
+            burn.node("bottom_left_text")["message"].setValue(version)
+            
+            # and the slate
+            slate_str =  "Project: %s\n" % context.project["name"]
+            slate_str += "%s: %s\n" % (context.entity["type"], context.entity["name"])
+            slate_str += "Version: %03d\n" % fields.get("version", 0)
+            
+            if context.task:
+                slate_str += "Task: %s\n" % context.task["name"]
+            elif context.step:
+                slate_str += "Step: %s\n" % context.step["name"]
+            
+            slate_str += "Frames: %s - %s\n" % (self.get_first_frame(), self.get_last_frame())
+            
+            burn.node("slate_info")["message"].setValue(slate_str)
+        finally:
+            self._group.end()
         
-        self._burnin.node("top_left_text")["message"].setValue(context.project["name"])
-        self._burnin.node("top_right_text")["message"].setValue(context.entity["name"])
-        self._burnin.node("bottom_left_text")["message"].setValue(version)
-        
-        # and the slate
-        slate_str =  "Project: %s\n" % context.project["name"]
-        slate_str += "%s: %s\n" % (context.entity["type"], context.entity["name"])
-        slate_str += "Version: %03d\n" % fields.get("version", 0)
-        
-        if context.task:
-            slate_str += "Task: %s\n" % context.task["name"]
-        elif context.step:
-            slate_str += "Step: %s\n" % context.step["name"]
-        
-        slate_str += "Frames: %s - %s\n" % (self.get_first_frame(), self.get_last_frame())
-        
-        self._burnin.node("slate_info")["message"].setValue(slate_str)
-        
+        self._burnin = burn
     
     def add_quicktime_output(self, profile, path):
         """
@@ -118,13 +126,14 @@ class QuicktimeGenerator(tank.platform.Application):
         if prof is None:
             raise tank.TankError("Could not find a configuration profile named %s!" % profile)
  
-        width = prof.get("width")
-        height = prof.get("height")
+        width = prof.get("width", 1024)
+        height = prof.get("height", 540)
         
-        if width is not None and height is not None:
+        self._group.begin()
+        try:
+        
             # create a scale node
             scale = nuke.nodes.Reformat()
-            self._nodes.append(scale)
             scale["type"].setValue("to box")
             scale["box_width"].setValue(width)
             scale["box_height"].setValue(height)
@@ -132,13 +141,13 @@ class QuicktimeGenerator(tank.platform.Application):
             scale["box_fixed"].setValue(True)
             scale["center"].setValue(True)
             scale["black_outside"].setValue(True)
-            scale.setInput(0, self._burnin)
-                
+            scale.setInput(0, self._burnin)                
             output = nuke.nodes.Write()
             output.setInput(0, scale)
-        else:
-            output = nuke.nodes.Write()
-            output.setInput(0, self._burnin)
+
+        finally:
+            self._group.end()
+
             
         self._outputs.append(output)
         # make sure we transform all paths to use forward slashes, otherwise nuke wont work....
@@ -160,8 +169,6 @@ class QuicktimeGenerator(tank.platform.Application):
         elif sys.platform == "linux2":
             output["file_type"].setValue("ffmpeg")
             output["codec"].setValue("MOV format (mov)")
-
-        
 
         
     def render(self):
