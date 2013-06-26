@@ -6,13 +6,36 @@
 
 # expected fields in the configuration file for this app
 configuration:    
-    profiles:
-        type: dict
-        description: "A set of dictionaries defining the quicktime profiles. Each profile
-                     is identified by its profile name - these are the keys in this dictionary.
-                     The value for each profile key is a dictionary which needs to contain
-                     the keys width and height, specifying the width and height in pixels for
-                     the profile."
+    movie_path_template:
+        type: template
+        required_fields: [version]
+        optional_fields: [channel,name,width,height,eye]
+        description: Template used to locate the output location of the movie file
+                     on the the file system. If None then this must be determined
+                     within the render_movie hook.
+
+    movie_width:
+        type: int
+        default: 1024
+        description: The width of the rendered movie file
+
+    movie_height:
+        type: int
+        default: 540
+        description: The height of the rendered movie file
+
+    new_version_status:
+        type: str
+        default_value: rev
+        description: The value to use for a new Version's status.
+
+    version_number_padding:
+        type: int
+        default_value: 3
+        description: This value will be used to pad the version number in the
+                     slate and various movie burnins. This will not affect version
+                     number padding in the movie filename. See movie_path_template.
+                     Use 1 for no padding.
 
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
