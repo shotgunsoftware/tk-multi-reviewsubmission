@@ -5,11 +5,14 @@ Copyright (c) 2012 Shotgun Software, Inc
 Example code for a quicktime creator app that runs in Nuke
 """
 
+import copy
 import os
-import platform
+import sys
 
 import nuke
 import tank
+import tank.templatekey
+
 
 class QuicktimeGenerator(tank.platform.Application):
     def __init__(self, *args, **kwargs):
@@ -19,48 +22,61 @@ class QuicktimeGenerator(tank.platform.Application):
         self._font = None
 
     def init_app(self):
-        self._logo = os.path.join(self.disk_location, "resources", "logo.png")
+        self._logo = self.get_setting("slate_logo")
         self._burnin_nk = os.path.join(self.disk_location, "resources", "burnin.nk")
         self._font = os.path.join(self.disk_location, "resources", "liberationsans_regular.ttf")
         # now transform paths to be forward slashes, otherwise it wont work on windows.
         # stupid nuke ;(
-        if platform.system() == 'Windows':
+        if sys.platform == 'win32':
             self._font = self._font.replace(os.sep, "/")
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")        
 
-    @staticmethod
-    def get_first_frame():
+    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publish, sg_task, comment):
         """
-        returns the first frame for this session
-        """
-        return int(nuke.root()["first_frame"].value())
-        
-    @staticmethod
-    def get_last_frame():
-        """
-        returns the last frame for this session
-        """
-        return int(nuke.root()["last_frame"].value())
+        Main application entry point to be called by other applications / hooks.
 
-    def render_and_submit(self, path, sg_publish, sg_task, comment):
+        :template: SGTK Template object. The template defining the path where
+                   frames should be found.
+                        
+        :fields: Fields to be used to fill out the template with.
+               
+        :first_frame: int. The first frame of the sequence of frames.
+                        
+        :last_frame: int. The last frame of the sequence of frames.
+                        
+        :sg_publish: A Shotgun published file object to link against.
+                     
+        :sg_task: A Shotgun task object to link against. Can be None.
+                        
+        :comment: str. A description to add to the Version in Shotgun. Can be None
+                  or empty string.
+        """
+        # Make sure we don't overwrite the caller's fields
+        fields = copy.copy(fields)
+
+        # Tweak fields so that we'll be getting nuke formated paths:
+        for key_name in [key.name for key in template.keys.values() if isinstance(key, tank.templatekey.SequenceKey)]:
+            fields[key_name] = "FORMAT: %d"
+
+        # Get our input path for frames to convert to movie
+        path = template.apply_fields(fields)
+
         # Movie output width and height
         width = self.get_setting("movie_width")
         height = self.get_setting("movie_height")
-
-        # Get an output path for the movie given the input path.
-        template = self.tank.template_from_path(path)
-        fields = template.get_fields(path)
         fields["width"] = width
         fields["height"] = height
 
+        # Get an output path for the movie.
         output_path_template = self.get_template("movie_path_template")
         output_path = output_path_template.apply_fields(fields)
 
-        self.render_movie(path, output_path, width, height)
-        self.submit_version(path, output_path, sg_publish, sg_task, comment)
+        # Render and Submit
+        self._render_movie_in_nuke(path, output_path, width, height, first_frame, last_frame)
+        self._submit_version(path, output_path, sg_publish, sg_task, comment)
     
-    def submit_version(self, path_to_frames, path_to_movie, sg_publish=None, sg_task=None, comment=None):
+    def _submit_version(self, path_to_frames, path_to_movie, sg_publish=None, sg_task=None, comment=None):
         """
         Create a version in Shotgun for this path and linked to this publish.
         """
@@ -71,7 +87,7 @@ class QuicktimeGenerator(tank.platform.Application):
             "sg_status_list": self.get_setting("new_version_status"),
             "entity": context.entity,
             "sg_task": sg_task,
-            "tank_published_file": sg_publish,
+            "published_files": [sg_publish],
             "description": comment,
             "sg_path_to_frames": path_to_frames,
             "sg_path_to_movie": path_to_movie,
@@ -83,9 +99,9 @@ class QuicktimeGenerator(tank.platform.Application):
         # Upload the movie to Shotgun
         self.tank.shotgun.upload("Version", sg_version['id'], path_to_movie, "sg_uploaded_movie")
 
-    def render_movie(self, path, output_path, width, height):
+    def _render_movie_in_nuke(self, path, output_path, width, height, first_frame, last_frame):
         """
-        Main hook entry point
+        Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
         """
         output_node = None
 
@@ -98,8 +114,8 @@ class QuicktimeGenerator(tank.platform.Application):
             # create read node
             read = nuke.nodes.Read(name="source", file=path)
             read["on_error"].setValue("black")
-            read["first"].setValue(self.get_first_frame())
-            read["last"].setValue(self.get_last_frame())
+            read["first"].setValue(first_frame)
+            read["last"].setValue(last_frame)
             
             # now create the slate/burnin node
             burn = nuke.nodePaste(self._burnin_nk) 
@@ -144,7 +160,7 @@ class QuicktimeGenerator(tank.platform.Application):
             elif context.step:
                 slate_str += "Step: %s\n" % context.step["name"]
             
-            slate_str += "Frames: %s - %s\n" % (self.get_first_frame(), self.get_last_frame())
+            slate_str += "Frames: %s - %s\n" % (first_frame, last_frame)
             
             burn.node("slate_info")["message"].setValue(slate_str)
 
@@ -164,11 +180,7 @@ class QuicktimeGenerator(tank.platform.Application):
             self.ensure_folder_exists(output_folder)
             
             # Render the outputs, first view only
-            nuke.executeMultiple(
-                [output_node],
-                ([self.get_first_frame()-1, self.get_last_frame(), 1],),
-                [nuke.views()[0]]
-            )
+            nuke.executeMultiple([output_node], ([first_frame-1, last_frame, 1],), [nuke.views()[0]])
 
         # Cleanup after ourselves
         nuke.delete(group)
@@ -194,11 +206,22 @@ class QuicktimeGenerator(tank.platform.Application):
         Create the Nuke output node for the movie.
         """
         node = nuke.nodes.Write()
-        if platform.system() in ["Darwin", "Windows"]:
+
+        # Example output settings
+        #
+        # These are either hard coded by a studio in a quicktime generation app
+        # itself (like here) or part of the configuration - however there is
+        # often the need to have special rules to for example handle multi
+        # platform cases.
+        #
+        # - On the mac and windows, we use the quicktime codec
+        # - On linux, use ffmpeg
+        if sys.platform in ["darwin", "win32"]:
             node["file_type"].setValue("mov")
             node["codec"].setValue("jpeg")
-        elif platform.system() == "Linux":
+        elif sys.platform == "linux2":
             node["file_type"].setValue("ffmpeg")
             node["codec"].setValue("MOV format (mov)")
+
         node["file"].setValue(path.replace(os.sep, "/"))
         return node        

@@ -10,9 +10,8 @@ configuration:
         type: template
         required_fields: [version]
         optional_fields: [channel,name,width,height,eye]
-        description: Template used to locate the output location of the movie file
-                     on the the file system. If None then this must be determined
-                     within the render_movie hook.
+        description: Template defining the output location of the movie file
+                     on the the file system.
 
     movie_width:
         type: int
@@ -37,6 +36,26 @@ configuration:
                      number padding in the movie filename. See movie_path_template.
                      Use 1 for no padding.
 
+    slate_logo:
+        type: config_path
+        description: This is the path to an image to use on the slate such as a
+                     company logo.
+        default_value: "logo.png"
+
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
 
+# More verbose description of this item 
+display_name: "Review Submission"
+description: "Provides functionality to submit image sequences to Shotgun for review."
+
+# Required minimum versions for this item to run
+requires_shotgun_version:
+requires_core_version: "v0.14.0"
+requires_engine_version: 
+
+# For now this app is only compatible with Nuke.
+supported_engines: ["tk-nuke"]
+
+# the frameworks required to run this app
+frameworks:
