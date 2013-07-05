@@ -32,7 +32,7 @@ class QuicktimeGenerator(tank.platform.Application):
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")        
 
-    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publish, sg_task, comment):
+    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes=None, sg_task=None, comment=""):
         """
         Main application entry point to be called by other applications / hooks.
 
@@ -52,6 +52,9 @@ class QuicktimeGenerator(tank.platform.Application):
         :comment: str. A description to add to the Version in Shotgun. Can be None
                   or empty string.
         """
+        if sg_publishes is None:
+            sg_publishes = []
+
         # Make sure we don't overwrite the caller's fields
         fields = copy.copy(fields)
 
@@ -74,9 +77,9 @@ class QuicktimeGenerator(tank.platform.Application):
 
         # Render and Submit
         self._render_movie_in_nuke(path, output_path, width, height, first_frame, last_frame)
-        self._submit_version(path, output_path, sg_publish, sg_task, comment)
+        self._submit_version(path, output_path, sg_publishes, sg_task, comment)
     
-    def _submit_version(self, path_to_frames, path_to_movie, sg_publish=None, sg_task=None, comment=None):
+    def _submit_version(self, path_to_frames, path_to_movie, sg_publishes=None, sg_task=None, comment=None):
         """
         Create a version in Shotgun for this path and linked to this publish.
         """
@@ -87,7 +90,7 @@ class QuicktimeGenerator(tank.platform.Application):
             "sg_status_list": self.get_setting("new_version_status"),
             "entity": context.entity,
             "sg_task": sg_task,
-            "published_files": [sg_publish],
+            "published_files": sg_publishes,
             "description": comment,
             "sg_path_to_frames": path_to_frames,
             "sg_path_to_movie": path_to_movie,
