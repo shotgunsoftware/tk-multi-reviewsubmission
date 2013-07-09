@@ -25,6 +25,15 @@ class QuicktimeGenerator(tank.platform.Application):
         self._logo = self.get_setting("slate_logo")
         self._burnin_nk = os.path.join(self.disk_location, "resources", "burnin.nk")
         self._font = os.path.join(self.disk_location, "resources", "liberationsans_regular.ttf")
+
+        # If the slate_logo supplied was an empty string, the result of getting 
+        # the setting will be the config folder which is invalid so catch that
+        # and make our logo path an empty string which Nuke won't have issues
+        # with.
+        # raise Exception(self.tank.pipeline_configuration.get_config_location())
+        if self._logo == os.path.join(self.tank.pipeline_configuration.get_config_location(), ""):
+            self._logo = ""
+
         # now transform paths to be forward slashes, otherwise it wont work on windows.
         # stupid nuke ;(
         if sys.platform == 'win32':
@@ -51,9 +60,17 @@ class QuicktimeGenerator(tank.platform.Application):
                         
         :comment: str. A description to add to the Version in Shotgun. Can be None
                   or empty string.
+
+        Returns the Version that was created in Shotgun.
         """
         if sg_publishes is None:
             sg_publishes = []
+
+        # Is the app configured to do anything?
+        upload_to_shotgun = self.get_setting("upload_to_shotgun")
+        store_on_disk = self.get_setting("store_on_disk")
+        if not upload_to_shotgun and not store_on_disk:
+            return None
 
         # Make sure we don't overwrite the caller's fields
         fields = copy.copy(fields)
@@ -77,9 +94,15 @@ class QuicktimeGenerator(tank.platform.Application):
 
         # Render and Submit
         self._render_movie_in_nuke(path, output_path, width, height, first_frame, last_frame)
-        self._submit_version(path, output_path, sg_publishes, sg_task, comment)
+        sg_version = self._submit_version(path, output_path, sg_publishes, sg_task, comment, upload_to_shotgun, store_on_disk)
+
+        # Remove the movie if no local copy was requested.
+        if not store_on_disk:
+            os.unlink(output_path)
+
+        return sg_version
     
-    def _submit_version(self, path_to_frames, path_to_movie, sg_publishes=None, sg_task=None, comment=None):
+    def _submit_version(self, path_to_frames, path_to_movie, sg_publishes=None, sg_task=None, comment=None, upload=True, store_on_disk=True):
         """
         Create a version in Shotgun for this path and linked to this publish.
         """
@@ -97,10 +120,17 @@ class QuicktimeGenerator(tank.platform.Application):
             "sg_movie_has_slate": True,
             "project": context.project,
         }
+
+        if not store_on_disk:
+            data["sg_path_to_movie"] = None
+
         sg_version = self.tank.shotgun.create("Version", data)
 
         # Upload the movie to Shotgun
-        self.tank.shotgun.upload("Version", sg_version['id'], path_to_movie, "sg_uploaded_movie")
+        if upload:
+            self.tank.shotgun.upload("Version", sg_version['id'], path_to_movie, "sg_uploaded_movie")
+
+        return sg_version
 
     def _render_movie_in_nuke(self, path, output_path, width, height, first_frame, last_frame):
         """
@@ -217,12 +247,18 @@ class QuicktimeGenerator(tank.platform.Application):
         # often the need to have special rules to for example handle multi
         # platform cases.
         #
-        # - On the mac and windows, we use the quicktime codec
-        # - On linux, use ffmpeg
+        # For examlpe, one could support 23.976 fps output (tested on win and
+        # osx) by adding the following lines to the appropriate OS if section:
+        #
+        # node["fps"].setValue(23.97599983)
+        # node["settings"].setValue("000000000000000000000000000019a7365616e0000000100000001000000000000018676696465000000010000000e00000000000000227370746c0000000100000000000000006a706567000000000018000003ff000000207470726c000000010000000000000000000000000017f9db00000000000000246472617400000001000000000000000000000000000000530000010000000100000000156d70736f00000001000000000000000000000000186d66726100000001000000000000000000000000000000187073667200000001000000000000000000000000000000156266726100000001000000000000000000000000166d70657300000001000000000000000000000000002868617264000000010000000000000000000000000000000000000000000000000000000000000016656e647300000001000000000000000000000000001663666c67000000010000000000000000004400000018636d66720000000100000000000000006170706c00000014636c75740000000100000000000000000000001c766572730000000100000000000000000003001c00010000")
+
         if sys.platform in ["darwin", "win32"]:
+            # On the mac and windows, we use the quicktime codec
             node["file_type"].setValue("mov")
             node["codec"].setValue("jpeg")
         elif sys.platform == "linux2":
+            # On linux, use ffmpeg
             node["file_type"].setValue("ffmpeg")
             node["codec"].setValue("MOV format (mov)")
 
