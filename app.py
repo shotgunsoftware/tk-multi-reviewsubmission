@@ -22,26 +22,26 @@ class QuicktimeGenerator(tank.platform.Application):
         self._font = None
 
     def init_app(self):
-        self._logo = self.get_setting("slate_logo")
+        
         self._burnin_nk = os.path.join(self.disk_location, "resources", "burnin.nk")
         self._font = os.path.join(self.disk_location, "resources", "liberationsans_regular.ttf")
 
         # If the slate_logo supplied was an empty string, the result of getting 
         # the setting will be the config folder which is invalid so catch that
-        # and make our logo path an empty string which Nuke won't have issues
-        # with.
-        # raise Exception(self.tank.pipeline_configuration.get_config_location())
-        if self._logo == os.path.join(self.tank.pipeline_configuration.get_config_location(), ""):
+        # and make our logo path an empty string which Nuke won't have issues with.
+        if os.path.isfile( self.get_setting("slate_logo", "") ):
+            self._logo = self.get_setting("slate_logo", "")
+        else:
             self._logo = ""
 
         # now transform paths to be forward slashes, otherwise it wont work on windows.
         # stupid nuke ;(
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self._font = self._font.replace(os.sep, "/")
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")        
 
-    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes=None, sg_task=None, comment=""):
+    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task, comment):
         """
         Main application entry point to be called by other applications / hooks.
 
@@ -54,28 +54,26 @@ class QuicktimeGenerator(tank.platform.Application):
                         
         :last_frame: int. The last frame of the sequence of frames.
                         
-        :sg_publish: A Shotgun published file object to link against.
+        :sg_publishes: A list of shotgun published file objects to link the publish against.
                      
         :sg_task: A Shotgun task object to link against. Can be None.
                         
-        :comment: str. A description to add to the Version in Shotgun. Can be None
-                  or empty string.
+        :comment: str. A description to add to the Version in Shotgun. 
 
         Returns the Version that was created in Shotgun.
         """
-        if sg_publishes is None:
-            sg_publishes = []
 
         # Is the app configured to do anything?
         upload_to_shotgun = self.get_setting("upload_to_shotgun")
         store_on_disk = self.get_setting("store_on_disk")
         if not upload_to_shotgun and not store_on_disk:
+            self.log_warning("App is not configured to store images on disk nor upload to shotgun!")
             return None
 
         # Make sure we don't overwrite the caller's fields
         fields = copy.copy(fields)
 
-        # Tweak fields so that we'll be getting nuke formated paths:
+        # Tweak fields so that we'll be getting nuke formated sequence markers (%03d, %04d etc):
         for key_name in [key.name for key in template.keys.values() if isinstance(key, tank.templatekey.SequenceKey)]:
             fields[key_name] = "FORMAT: %d"
 
@@ -257,6 +255,7 @@ class QuicktimeGenerator(tank.platform.Application):
             # On the mac and windows, we use the quicktime codec
             node["file_type"].setValue("mov")
             node["codec"].setValue("jpeg")
+
         elif sys.platform == "linux2":
             # On linux, use ffmpeg
             node["file_type"].setValue("ffmpeg")
