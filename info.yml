@@ -8,7 +8,7 @@
 configuration:
     upload_to_shotgun:
         type: bool
-        default: true
+        default_value: true
         description: Should the movie being created be uploaded to Shotgun
                      as a version or just kept on disk? Disabling this as well
                      as the store_on_disk option effectively disables the whole
@@ -16,7 +16,7 @@ configuration:
 
     store_on_disk:
         type: bool
-        default: true
+        default_value: true
         description: Should the movie being created be kept on disk? Disabling
                      this as well as the upload_to_shotgun option will
                      effectively disable the whole tool.
@@ -37,12 +37,12 @@ configuration:
 
     movie_width:
         type: int
-        default: 1024
+        default_value: 1024
         description: The width of the rendered movie file
 
     movie_height:
         type: int
-        default: 540
+        default_value: 540
         description: The height of the rendered movie file
 
     new_version_status:
@@ -68,7 +68,7 @@ configuration:
                      an alpha channel if you want to add transparency. Currently
                      any image format supported by Nuke is adequate. If this
                      setting is an empty string, no logo will be applied.
-        default: ""
+        default_value: ""
 
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
