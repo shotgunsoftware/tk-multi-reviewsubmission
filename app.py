@@ -91,8 +91,16 @@ class QuicktimeGenerator(tank.platform.Application):
         output_path = output_path_template.apply_fields(fields)
 
         # Render and Submit
-        self._render_movie_in_nuke(path, output_path, width, height, first_frame, last_frame)
-        sg_version = self._submit_version(path, output_path, sg_publishes, sg_task, comment, upload_to_shotgun, store_on_disk)
+        self._render_movie_in_nuke(fields, path, output_path, width, height, first_frame, last_frame)
+        sg_version = self._submit_version(path, 
+                                          output_path,
+                                          sg_publishes, 
+                                          sg_task, 
+                                          comment, 
+                                          upload_to_shotgun, 
+                                          store_on_disk,
+                                          first_frame, 
+                                          last_frame)
 
         # Remove the movie if no local copy was requested.
         if not store_on_disk:
@@ -100,37 +108,55 @@ class QuicktimeGenerator(tank.platform.Application):
 
         return sg_version
     
-    def _submit_version(self, path_to_frames, path_to_movie, sg_publishes=None, sg_task=None, comment=None, upload=True, store_on_disk=True):
+    def _submit_version(self, path_to_frames, path_to_movie, sg_publishes, 
+                        sg_task, comment, upload, store_on_disk, first_frame, last_frame):
         """
         Create a version in Shotgun for this path and linked to this publish.
         """
+        
+        # get current shotgun user
+        current_user = tank.util.get_current_user(self.tank)
+        
+        # create a name for the version based on the file name
+        # grab the file name, strip off extension
+        name = os.path.splitext(os.path.basename(path_to_movie))[0]
+        # do some replacements
+        name = name.replace("_", " ")
+        # and capitalize
+        name = name.capitalize()
+        
         # Create the version in Shotgun
-        context = self.tank.context_from_path(path_to_frames)
         data = {
-            "code": os.path.splitext(os.path.basename(path_to_movie))[0],
+            "code": name,
             "sg_status_list": self.get_setting("new_version_status"),
-            "entity": context.entity,
+            "entity": self.context.entity,
             "sg_task": sg_task,
+            "sg_first_frame": first_frame,
+            "sg_last_frame": last_frame,
+            "frame_count": (last_frame-first_frame+1),
+            "frame_range": "%s-%s" % (first_frame, last_frame),
+            "sg_frames_have_slate": False,
             "published_files": sg_publishes,
+            "created_by": current_user,
             "description": comment,
             "sg_path_to_frames": path_to_frames,
-            "sg_path_to_movie": path_to_movie,
             "sg_movie_has_slate": True,
-            "project": context.project,
+            "project": self.context.project,
         }
 
-        if not store_on_disk:
-            data["sg_path_to_movie"] = None
+        data["sg_path_to_movie"] = path_to_movie
 
         sg_version = self.tank.shotgun.create("Version", data)
+        self.log_debug("Created version in shotgun: %s" % str(data))
 
         # Upload the movie to Shotgun
         if upload:
+            self.log_debug("Uploading movie to shotgun...")
             self.tank.shotgun.upload("Version", sg_version['id'], path_to_movie, "sg_uploaded_movie")
 
         return sg_version
 
-    def _render_movie_in_nuke(self, path, output_path, width, height, first_frame, last_frame):
+    def _render_movie_in_nuke(self, fields, path, output_path, width, height, first_frame, last_frame):
         """
         Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
         """
@@ -161,35 +187,33 @@ class QuicktimeGenerator(tank.platform.Application):
         
             # add the logo
             burn.node("logo")["file"].setValue(self._logo)
-        
-            # pull some metadata out of the context and the file
-            template = self.tank.template_from_path(path)
-            fields = template.get_fields(path)
-            context = self.tank.context_from_path(path)
-    
-            # format the burnins  
-            ver = fields.get("version", 0)
-            version_padding_format = "%%0%dd" % self.get_setting("version_number_padding")
-            if context.task:
-                version = ("%s, version " + version_padding_format) % (context.task["name"], ver)
-            elif context.step:
-                version = ("%s, version " + version_padding_format) % (context.step["name"], ver)
-            else:
-                version = ("Version " + version_padding_format) % ver
             
-            burn.node("top_left_text")["message"].setValue(context.project["name"])
-            burn.node("top_right_text")["message"].setValue(context.entity["name"])
+            # format the burnins
+            version_padding_format = "%%0%dd" % self.get_setting("version_number_padding")
+            version_str = version_padding_format % fields.get("version", 0)
+            
+            
+            if self.context.task:
+                version = "%s, v%s" % (self.context.task["name"], version_str)
+            elif self.context.step:
+                version = "%s, v%s" % (self.context.step["name"], version_str)
+            else:
+                version = "v%s" % version_str
+            
+            burn.node("top_left_text")["message"].setValue(self.context.project["name"])
+            burn.node("top_right_text")["message"].setValue(self.context.entity["name"])
             burn.node("bottom_left_text")["message"].setValue(version)
             
-            # and the slate
-            slate_str =  "Project: %s\n" % context.project["name"]
-            slate_str += "%s: %s\n" % (context.entity["type"], context.entity["name"])
-            slate_str += ("Version: " + version_padding_format + "\n") % ver
+            # and the slate            
+            slate_str =  "Project: %s\n" % self.context.project["name"]
+            slate_str += "%s: %s\n" % (self.context.entity["type"], self.context.entity["name"])
+            slate_str += "Name: %s\n" % fields.get("name", "Unnamed").capitalize()
+            slate_str += "Version: %s\n" % version_str
             
-            if context.task:
-                slate_str += "Task: %s\n" % context.task["name"]
-            elif context.step:
-                slate_str += "Step: %s\n" % context.step["name"]
+            if self.context.task:
+                slate_str += "Task: %s\n" % self.context.task["name"]
+            elif self.context.step:
+                slate_str += "Step: %s\n" % self.context.step["name"]
             
             slate_str += "Frames: %s - %s\n" % (first_frame, last_frame)
             
@@ -245,11 +269,6 @@ class QuicktimeGenerator(tank.platform.Application):
         # often the need to have special rules to for example handle multi
         # platform cases.
         #
-        # For examlpe, one could support 23.976 fps output (tested on win and
-        # osx) by adding the following lines to the appropriate OS if section:
-        #
-        # node["fps"].setValue(23.97599983)
-        # node["settings"].setValue("000000000000000000000000000019a7365616e0000000100000001000000000000018676696465000000010000000e00000000000000227370746c0000000100000000000000006a706567000000000018000003ff000000207470726c000000010000000000000000000000000017f9db00000000000000246472617400000001000000000000000000000000000000530000010000000100000000156d70736f00000001000000000000000000000000186d66726100000001000000000000000000000000000000187073667200000001000000000000000000000000000000156266726100000001000000000000000000000000166d70657300000001000000000000000000000000002868617264000000010000000000000000000000000000000000000000000000000000000000000016656e647300000001000000000000000000000000001663666c67000000010000000000000000004400000018636d66720000000100000000000000006170706c00000014636c75740000000100000000000000000000001c766572730000000100000000000000000003001c00010000")
 
         if sys.platform in ["darwin", "win32"]:
             # On the mac and windows, we use the quicktime codec
