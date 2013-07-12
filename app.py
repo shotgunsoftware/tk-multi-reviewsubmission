@@ -12,6 +12,7 @@ import sys
 import nuke
 import tank
 import tank.templatekey
+from tank.platform.qt import QtCore
 
 
 class QuicktimeGenerator(tank.platform.Application):
@@ -20,6 +21,7 @@ class QuicktimeGenerator(tank.platform.Application):
         self._logo = None
         self._burnin_nk = None
         self._font = None
+        self._upload_threads = []
 
     def init_app(self):
         
@@ -97,19 +99,39 @@ class QuicktimeGenerator(tank.platform.Application):
                                           sg_publishes, 
                                           sg_task, 
                                           comment, 
-                                          upload_to_shotgun, 
                                           store_on_disk,
                                           first_frame, 
                                           last_frame)
 
-        # Remove the movie if no local copy was requested.
-        if not store_on_disk:
-            os.unlink(output_path)
+        if upload_to_shotgun:
+            def after_upload():
+                """
+                Function to do some after upload house cleaning.
+                - Remove the movie if no local copy was requested.
+                - Get rid of any thread objects that are finished.
+                """
+                if not store_on_disk:
+                    os.unlink(output_path)
+
+                for thread in self._upload_threads:
+                    if thread.isFinished():
+                        self._upload_threads.remove(thread)
+
+            # Upload the movie to Shotgun and when upload is finished remove
+            # from disk...
+            thread = UploaderThread(self, sg_version, output_path)
+            self._upload_threads.append(thread)
+            thread.finished.connect(after_upload)
+            thread.start()
+        else:
+            # ... or remove from disk immediately
+            if not store_on_disk:
+                os.unlink(output_path)
 
         return sg_version
     
-    def _submit_version(self, path_to_frames, path_to_movie, sg_publishes, 
-                        sg_task, comment, upload, store_on_disk, first_frame, last_frame):
+    def _submit_version(self, path_to_frames, path_to_movie, sg_publishes,
+                        sg_task, comment, store_on_disk, first_frame, last_frame):
         """
         Create a version in Shotgun for this path and linked to this publish.
         """
@@ -144,16 +166,11 @@ class QuicktimeGenerator(tank.platform.Application):
             "project": self.context.project,
         }
 
-        data["sg_path_to_movie"] = path_to_movie
+        if store_on_disk:
+            data["sg_path_to_movie"] = path_to_movie
 
         sg_version = self.tank.shotgun.create("Version", data)
         self.log_debug("Created version in shotgun: %s" % str(data))
-
-        # Upload the movie to Shotgun
-        if upload:
-            self.log_debug("Uploading movie to shotgun...")
-            self.tank.shotgun.upload("Version", sg_version['id'], path_to_movie, "sg_uploaded_movie")
-
         return sg_version
 
     def _render_movie_in_nuke(self, fields, path, output_path, width, height, first_frame, last_frame):
@@ -282,3 +299,15 @@ class QuicktimeGenerator(tank.platform.Application):
 
         node["file"].setValue(path.replace(os.sep, "/"))
         return node        
+
+
+class UploaderThread(QtCore.QThread):
+    def __init__(self, app, version, path_to_movie):
+        QtCore.QThread.__init__(self)
+        self._app = app
+        self._version = version
+        self._path_to_movie = path_to_movie
+
+    def run(self):
+        self._app.log_debug("Uploading %s to shotgun..." % self._path_to_movie)
+        self._app.tank.shotgun.upload("Version", self._version['id'], self._path_to_movie, "sg_uploaded_movie")
