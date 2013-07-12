@@ -8,7 +8,6 @@ Example code for a quicktime creator app that runs in Nuke
 import copy
 import os
 import sys
-import time
 
 import nuke
 import tank
@@ -43,7 +42,8 @@ class QuicktimeGenerator(tank.platform.Application):
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")        
 
-    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task, comment, progress_cb):
+    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task,
+                          comment, thumbnail_path, progress_cb):
         """
         Main application entry point to be called by other applications / hooks.
 
@@ -108,16 +108,14 @@ class QuicktimeGenerator(tank.platform.Application):
                                           first_frame, 
                                           last_frame)
 
-        # Upload in a new thread
-        if upload_to_shotgun:
-            progress_cb(60, "Uploading")
-            thread = UploaderThread(self, sg_version, output_path)
-            thread.start()
-
-            # Report bogus data while
-            while not thread.isFinished():
-                progress_cb(60, "Uploading")
-                time.sleep(1)
+        # Upload in a new thread and make our own event loop to wait for the
+        # thread to finish.
+        progress_cb(60, "Uploading")
+        event_loop = QtCore.QEventLoop()
+        thread = UploaderThread(self, sg_version, output_path, thumbnail_path, upload_to_shotgun)
+        thread.finished.connect(event_loop.quit)
+        thread.start()
+        event_loop.exec_()
 
         # Remove from filesystem if required
         if not store_on_disk:
@@ -297,12 +295,24 @@ class QuicktimeGenerator(tank.platform.Application):
 
 
 class UploaderThread(QtCore.QThread):
-    def __init__(self, app, version, path_to_movie):
+    def __init__(self, app, version, path_to_movie, thumbnail_path, upload_to_shotgun):
         QtCore.QThread.__init__(self)
         self._app = app
         self._version = version
         self._path_to_movie = path_to_movie
+        self._thumbnail_path = thumbnail_path
+        self._upload_to_shotgun = upload_to_shotgun
 
     def run(self):
-        self._app.log_debug("Uploading %s to shotgun..." % self._path_to_movie)
-        self._app.tank.shotgun.upload("Version", self._version['id'], self._path_to_movie, "sg_uploaded_movie")
+        error = False
+
+        if self._upload_to_shotgun:
+            self._app.log_debug("Uploading %s to shotgun..." % self._path_to_movie)
+            try:
+                self._app.tank.shotgun.upload("Version", self._version["id"], self._path_to_movie, "sg_uploaded_movie")
+            except Exception:
+                error = True
+
+        if not self._upload_to_shotgun or error:
+            self._app.log_debug("Uploading thumbnail %s to shotgun..." % self._thumbnail_path)
+            self._app.tank.shotgun.upload_thumbnail("Version", self._version["id"], self._thumbnail_path)
