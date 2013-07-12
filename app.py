@@ -8,6 +8,7 @@ Example code for a quicktime creator app that runs in Nuke
 import copy
 import os
 import sys
+import time
 
 import nuke
 import tank
@@ -21,7 +22,6 @@ class QuicktimeGenerator(tank.platform.Application):
         self._logo = None
         self._burnin_nk = None
         self._font = None
-        self._upload_threads = []
 
     def init_app(self):
         
@@ -43,7 +43,7 @@ class QuicktimeGenerator(tank.platform.Application):
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")        
 
-    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task, comment):
+    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task, comment, progress_cb):
         """
         Main application entry point to be called by other applications / hooks.
 
@@ -72,6 +72,8 @@ class QuicktimeGenerator(tank.platform.Application):
             self.log_warning("App is not configured to store images on disk nor upload to shotgun!")
             return None
 
+        progress_cb(10, "Preparing")
+
         # Make sure we don't overwrite the caller's fields
         fields = copy.copy(fields)
 
@@ -93,7 +95,10 @@ class QuicktimeGenerator(tank.platform.Application):
         output_path = output_path_template.apply_fields(fields)
 
         # Render and Submit
+        progress_cb(20, "Rendering movie")
         self._render_movie_in_nuke(fields, path, output_path, width, height, first_frame, last_frame)
+
+        progress_cb(50, "Creating Shotgun Version")
         sg_version = self._submit_version(path, 
                                           output_path,
                                           sg_publishes, 
@@ -103,33 +108,23 @@ class QuicktimeGenerator(tank.platform.Application):
                                           first_frame, 
                                           last_frame)
 
+        # Upload in a new thread
         if upload_to_shotgun:
-            def after_upload():
-                """
-                Function to do some after upload house cleaning.
-                - Remove the movie if no local copy was requested.
-                - Get rid of any thread objects that are finished.
-                """
-                if not store_on_disk:
-                    os.unlink(output_path)
-
-                for thread in self._upload_threads:
-                    if thread.isFinished():
-                        self._upload_threads.remove(thread)
-
-            # Upload the movie to Shotgun and when upload is finished remove
-            # from disk...
+            progress_cb(60, "Uploading")
             thread = UploaderThread(self, sg_version, output_path)
-            self._upload_threads.append(thread)
-            thread.finished.connect(after_upload)
             thread.start()
-        else:
-            # ... or remove from disk immediately
-            if not store_on_disk:
-                os.unlink(output_path)
+
+            # Report bogus data while
+            while not thread.isFinished():
+                progress_cb(60, "Uploading")
+                time.sleep(1)
+
+        # Remove from filesystem if required
+        if not store_on_disk:
+            os.unlink(output_path)
 
         return sg_version
-    
+
     def _submit_version(self, path_to_frames, path_to_movie, sg_publishes,
                         sg_task, comment, store_on_disk, first_frame, last_frame):
         """
