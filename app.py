@@ -110,15 +110,19 @@ class QuicktimeGenerator(tank.platform.Application):
 
         # Upload in a new thread and make our own event loop to wait for the
         # thread to finish.
-        progress_cb(60, "Uploading")
+        progress_cb(60, "Uploading to Shotgun")
         event_loop = QtCore.QEventLoop()
         thread = UploaderThread(self, sg_version, output_path, thumbnail_path, upload_to_shotgun)
         thread.finished.connect(event_loop.quit)
         thread.start()
         event_loop.exec_()
-
+        
+        # log any errors generated in the thread
+        for e in thread.get_errors():
+            self.log_error(e)
+            
         # Remove from filesystem if required
-        if not store_on_disk:
+        if not store_on_disk and os.path.exists(output_path):
             os.unlink(output_path)
 
         return sg_version
@@ -295,6 +299,11 @@ class QuicktimeGenerator(tank.platform.Application):
 
 
 class UploaderThread(QtCore.QThread):
+    """
+    Simple worker thread that encapsulates uploading to shotgun.
+    Broken out of the main loop so that the UI can remain responsive
+    even though an upload is happening
+    """
     def __init__(self, app, version, path_to_movie, thumbnail_path, upload_to_shotgun):
         QtCore.QThread.__init__(self)
         self._app = app
@@ -302,17 +311,29 @@ class UploaderThread(QtCore.QThread):
         self._path_to_movie = path_to_movie
         self._thumbnail_path = thumbnail_path
         self._upload_to_shotgun = upload_to_shotgun
+        self._errors = []
+
+    def get_errors(self):
+        """
+        can be called after execution to retrieve a list of errors
+        """
+        return self._errors
 
     def run(self):
-        error = False
+        """
+        Thread loop
+        """
+        upload_error = False
 
         if self._upload_to_shotgun:
-            self._app.log_debug("Uploading %s to shotgun..." % self._path_to_movie)
             try:
                 self._app.tank.shotgun.upload("Version", self._version["id"], self._path_to_movie, "sg_uploaded_movie")
-            except Exception:
-                error = True
+            except Exception, e:
+                self._errors.append("Movie upload to Shotgun failed: %s" % e)
+                upload_error = True
 
-        if not self._upload_to_shotgun or error:
-            self._app.log_debug("Uploading thumbnail %s to shotgun..." % self._thumbnail_path)
-            self._app.tank.shotgun.upload_thumbnail("Version", self._version["id"], self._thumbnail_path)
+        if not self._upload_to_shotgun or upload_error:
+            try:
+                self._app.tank.shotgun.upload_thumbnail("Version", self._version["id"], self._thumbnail_path)
+            except Exception, e:
+                self._errors.append("Thumbnail upload to Shotgun failed: %s" % e)
