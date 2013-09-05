@@ -1,5 +1,5 @@
 set cut_paste_input [stack 0]
-version 6.3 v7
+version 6.3 v8
 push $cut_paste_input
 Group {
  name Group1
@@ -17,42 +17,42 @@ Group {
  }
  Text {
   message "\{top_left\}"
-  size 48
+  size {{48/1556*height}}
   yjustify top
   Transform 1
-  box {{40 40} {"\[value root.height]-40" 1516} 840 1310}
+  box {{40/1556*height 40} {"\[value height]-(40/1556*height)" 1516} {"\[value width] - (40/1556*height)"} {40/1556*height}}
   name top_left_text
   xpos 389
   ypos 212
  }
  Text {
   message "\[format %04d \[frame]]"
-  size 48
+  size {{parent.top_left_text.size i}}
   xjustify right
   yjustify bottom
   Transform 1
-  box {{"\[value root.width]-40" i 2008} {40 i 40} 1208 240}
+  box {{parent.top_left_text.box.x i 2008} {parent.top_left_text.box.y i 40} {parent.top_left_text.box.r i} {parent.top_left_text.box.t i}}
   name framecounter
   xpos 389
   ypos 236
  }
  Text {
   message "\{top_right\}\n"
-  size 48
+  size {{parent.top_left_text.size i}}
   xjustify right
   yjustify top
   Transform 1
-  box {{"\[value root.width]-40" i 2008} {"\[value root.height]-40" i 1516} 1200 1280}
+  box {{parent.top_left_text.box.x i 2008} {parent.top_left_text.box.y i 1516} {parent.top_left_text.box.r i} {parent.top_left_text.box.t i}}
   name top_right_text
   xpos 389
   ypos 262
  }
  Text {
   message ""
-  size 48
+  size {{parent.top_left_text.size i}}
   yjustify bottom
   Transform 1
-  box {40 40 850 240}
+  box {{parent.top_left_text.box.x i} {parent.top_left_text.box.y i} {parent.top_left_text.box.r i} {parent.top_left_text.box.t i}}
   name bottom_left_text
   xpos 389
   ypos 288
