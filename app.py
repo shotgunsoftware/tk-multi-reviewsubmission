@@ -50,7 +50,7 @@ class QuicktimeGenerator(tank.platform.Application):
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")        
 
     def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task,
-                          comment, thumbnail_path, progress_cb):
+                          comment, thumbnail_path, progress_cb, local_source_folder=None):
         """
         Main application entry point to be called by other applications / hooks.
 
@@ -90,6 +90,8 @@ class QuicktimeGenerator(tank.platform.Application):
 
         # Get our input path for frames to convert to movie
         path = template.apply_fields(fields)
+        if local_source_folder is not None:
+            path = os.path.join(local_source_folder, os.path.basename(path))
 
         # Movie output width and height
         width = self.get_setting("movie_width")
