@@ -162,13 +162,20 @@ class QuicktimeGenerator(tank.platform.Application):
             "frame_count": (last_frame-first_frame+1),
             "frame_range": "%s-%s" % (first_frame, last_frame),
             "sg_frames_have_slate": False,
-            "published_files": sg_publishes,
             "created_by": current_user,
             "description": comment,
             "sg_path_to_frames": path_to_frames,
             "sg_movie_has_slate": True,
             "project": self.context.project,
         }
+
+        if tank.util.get_published_file_entity_type(self.tank) == "PublishedFile":
+            data["published_files"] = sg_publishes
+        else:# == "TankPublishedFile"
+            if len(sg_publishes) > 0:
+                if len(sg_publishes) > 1:
+                    self.log_warning("Only the first publish of %d can be registered for the new version!" % len(sg_publishes))
+                data["tank_published_file"] = sg_publishes[0]
 
         if store_on_disk:
             data["sg_path_to_movie"] = path_to_movie
