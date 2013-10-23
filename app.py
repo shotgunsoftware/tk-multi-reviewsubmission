@@ -306,7 +306,7 @@ class QuicktimeGenerator(tank.platform.Application):
         elif sys.platform == "linux2":
             # On linux, use ffmpeg
             node["file_type"].setValue("ffmpeg")
-            node["codec"].setValue("MOV format (mov)")
+            node["format"].setValue("MOV format (mov)")
 
         node["file"].setValue(path.replace(os.sep, "/"))
         return node        
