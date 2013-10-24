@@ -163,6 +163,7 @@ class QuicktimeGenerator(tank.platform.Application):
             "frame_range": "%s-%s" % (first_frame, last_frame),
             "sg_frames_have_slate": False,
             "created_by": current_user,
+            "user": current_user,
             "description": comment,
             "sg_path_to_frames": path_to_frames,
             "sg_movie_has_slate": True,
