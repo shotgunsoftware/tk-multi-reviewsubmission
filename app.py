@@ -198,7 +198,7 @@ class QuicktimeGenerator(tank.platform.Application):
         group.begin()
         try:
             # create read node
-            read = nuke.nodes.Read(name="source", file=path)
+            read = nuke.nodes.Read(name="source", file=path.replace(os.sep, "/"))
             read["on_error"].setValue("black")
             read["first"].setValue(first_frame)
             read["last"].setValue(last_frame)
