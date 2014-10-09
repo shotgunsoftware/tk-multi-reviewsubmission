@@ -39,9 +39,23 @@ class Renderer(object):
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/") 
 
-    def render_movie_in_nuke(self, path, output_path, width, height, first_frame, last_frame, version, name):
+    def render_movie_in_nuke(self, path, output_path, 
+                             width, height, 
+                             first_frame, last_frame, 
+                             version, name, 
+                             color_space):
         """
         Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
+                        
+        :param path:        Path to the input frames for the movie
+        :param output_path: Path to the output movie that will be rendered
+        :param width:       Width of the output movie
+        :param height:      Height of the output movie
+        :param first_frame: Start frame for the output movie
+        :param last_frame:  End frame for the output movie
+        :param version:     Version number to use for the output movie slate and burn-in
+        :param name:        Name to use in the slate for the output movie
+        :param color_space: Colorspace of the input frames
         """
         output_node = None
         ctx = self.__app.context
@@ -57,6 +71,8 @@ class Renderer(object):
             read["on_error"].setValue("black")
             read["first"].setValue(first_frame)
             read["last"].setValue(last_frame)
+            if color_space:
+                read["colorspace"].setValue(color_space)
             
             # now create the slate/burnin node
             burn = nuke.nodePaste(self._burnin_nk) 

@@ -34,6 +34,20 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
     def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task,
                           comment, thumbnail_path, progress_cb):
         """
+        *** Deprecated ***
+        Please use 'render_and_submit_version' instead
+        """
+        self.log_warning("The method 'render_and_submit()' has been deprecated as it didn't allow the colorspace "
+                         "of the input frames to be specified.  Please use 'render_and_submit_version()' "
+                         "instead.")
+        
+        # call new version
+        return self.render_and_submit_version(template, fields, first_frame, last_frame, sg_publishes, sg_task,
+                                  comment, thumbnail_path, progress_cb)
+
+    def render_and_submit_version(self, template, fields, first_frame, last_frame, sg_publishes, sg_task,
+                                  comment, thumbnail_path, progress_cb, color_space=None, *args, **kwargs):
+        """
         Main application entry point to be called by other applications / hooks.
 
         :param template:        The template defining the path where frames should be found.
@@ -42,7 +56,11 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         :param last_frame:      The last frame of the sequence of frames.
         :param sg_publishes:    A list of shotgun published file objects to link the publish against.
         :param sg_task:         A Shotgun task object to link against. Can be None.
-        :param comment:         A description to add to the Version in Shotgun. 
+        :param comment:         A description to add to the Version in Shotgun.
+        :param thumbnail_path:  The path to a thumbnail to use for the version when the movie isn't
+                                being uploaded to Shotgun (this is set in the config)
+        :param progress_cb:     A callback to report progress with.
+        :param color_space:     The colorspace of the rendered frames
 
         :returns:               The Version Shotgun entity dictionary that was created.
         """
@@ -85,23 +103,25 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
                                       width, height, 
                                       first_frame, last_frame,
                                       fields.get("version", 0), 
-                                      fields.get("name", "Unnamed"))
+                                      fields.get("name", "Unnamed"),
+                                      color_space)
 
         progress_cb(50, "Creating Shotgun Version and uploading movie")
         submitter = tk_multi_reviewsubmission.Submitter()
         sg_version = submitter.submit_version(path, 
-                                               output_path,
-                                               thumbnail_path,
-                                               sg_publishes, 
-                                               sg_task, 
-                                               comment, 
-                                               store_on_disk,
-                                               first_frame, 
-                                               last_frame,
-                                               upload_to_shotgun)
+                                              output_path,
+                                              thumbnail_path,
+                                              sg_publishes, 
+                                              sg_task, 
+                                              comment, 
+                                              store_on_disk,
+                                              first_frame, 
+                                              last_frame,
+                                              upload_to_shotgun)
             
         # Remove from filesystem if required
         if not store_on_disk and os.path.exists(output_path):
+            progress_cb(90, "Deleting rendered movie")
             os.unlink(output_path)
 
         return sg_version
