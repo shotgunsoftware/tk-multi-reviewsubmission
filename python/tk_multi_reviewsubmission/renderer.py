@@ -10,8 +10,6 @@
 
 import sgtk
 import os
-import sys
-import nuke
 
 class Renderer(object):
     
@@ -21,29 +19,20 @@ class Renderer(object):
         """
         self.__app = sgtk.platform.current_bundle() 
         
-        self._burnin_nk = os.path.join(self.__app.disk_location, "resources", "burnin.nk")
-        self._font = os.path.join(self.__app.disk_location, "resources", "liberationsans_regular.ttf")
-        
         # If the slate_logo supplied was an empty string, the result of getting 
         # the setting will be the config folder which is invalid so catch that
         # and make our logo path an empty string which Nuke won't have issues with.
-        self._logo = None
+        self._slate_logo = None
         if os.path.isfile( self.__app.get_setting("slate_logo", "") ):
-            self._logo = self.__app.get_setting("slate_logo", "")
+            self._slate_logo = self.__app.get_setting("slate_logo", "")
         else:
-            self._logo = ""
+            self._slate_logo = ""
 
-        # now transform paths to be forward slashes, otherwise it wont work on windows.
-        if sys.platform == "win32":
-            self._font = self._font.replace(os.sep, "/")
-            self._logo = self._logo.replace(os.sep, "/")
-            self._burnin_nk = self._burnin_nk.replace(os.sep, "/") 
-
-    def render_movie_in_nuke(self, path, output_path, 
-                             width, height, 
-                             first_frame, last_frame, 
-                             version, name, 
-                             color_space):
+    def render_movie(self, path, output_path,
+                     width, height,
+                     first_frame, last_frame,
+                     version, name,
+                     color_space):
         """
         Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
                         
@@ -57,126 +46,49 @@ class Renderer(object):
         :param name:        Name to use in the slate for the output movie
         :param color_space: Colorspace of the input frames
         """
-        output_node = None
         ctx = self.__app.context
-
-        # create group where everything happens
-        group = nuke.nodes.Group()
         
-        # now operate inside this group
-        group.begin()
-        try:
-            # create read node
-            read = nuke.nodes.Read(name="source", file=path.replace(os.sep, "/"))
-            read["on_error"].setValue("black")
-            read["first"].setValue(first_frame)
-            read["last"].setValue(last_frame)
-            if color_space:
-                read["colorspace"].setValue(color_space)
-            
-            # now create the slate/burnin node
-            burn = nuke.nodePaste(self._burnin_nk) 
-            burn.setInput(0, read)
+        # Construct the burnin and slate text.  Currently this is hard-coded but could be
+        # template driven at some point if needed
+        version_padding_format = "%%0%dd" % self.__app.get_setting("version_number_padding")
+        version_str = version_padding_format % version
         
-            # set the fonts for all text fields
-            burn.node("top_left_text")["font"].setValue(self._font)
-            burn.node("top_right_text")["font"].setValue(self._font)
-            burn.node("bottom_left_text")["font"].setValue(self._font)
-            burn.node("framecounter")["font"].setValue(self._font)
-            burn.node("slate_info")["font"].setValue(self._font)
+        if ctx.task:
+            version_label = "%s, v%s" % (ctx.task["name"], version_str)
+        elif ctx.step:
+            version_label = "%s, v%s" % (ctx.step["name"], version_str)
+        else:
+            version_label = "v%s" % version_str
         
-            # add the logo
-            burn.node("logo")["file"].setValue(self._logo)
-            
-            # format the burnins
-            version_padding_format = "%%0%dd" % self.__app.get_setting("version_number_padding")
-            version_str = version_padding_format % version
-            
-            if ctx.task:
-                version_label = "%s, v%s" % (ctx.task["name"], version_str)
-            elif ctx.step:
-                version_label = "%s, v%s" % (ctx.step["name"], version_str)
-            else:
-                version_label = "v%s" % version_str
-            
-            burn.node("top_left_text")["message"].setValue(ctx.project["name"])
-            burn.node("top_right_text")["message"].setValue(ctx.entity["name"])
-            burn.node("bottom_left_text")["message"].setValue(version_label)
-            
-            # and the slate            
-            slate_str =  "Project: %s\n" % ctx.project["name"]
-            slate_str += "%s: %s\n" % (ctx.entity["type"], ctx.entity["name"])
-            slate_str += "Name: %s\n" % name.capitalize()
-            slate_str += "Version: %s\n" % version_str
-            
-            if ctx.task:
-                slate_str += "Task: %s\n" % ctx.task["name"]
-            elif ctx.step:
-                slate_str += "Step: %s\n" % ctx.step["name"]
-            
-            slate_str += "Frames: %s - %s\n" % (first_frame, last_frame)
-            
-            burn.node("slate_info")["message"].setValue(slate_str)
-
-            # create a scale node
-            scale = self.__create_scale_node(width, height)
-            scale.setInput(0, burn)                
-
-            # Create the output node
-            output_node = self.__create_output_node(output_path)
-            output_node.setInput(0, scale)
-        finally:
-            group.end()
-    
-        if output_node:
-            # Make sure the output folder exists
-            output_folder = os.path.dirname(output_path)
-            self.__app.ensure_folder_exists(output_folder)
-            
-            # Render the outputs, first view only
-            nuke.executeMultiple([output_node], ([first_frame-1, last_frame, 1],), [nuke.views()[0]])
-
-        # Cleanup after ourselves
-        nuke.delete(group)
+        burnin_text = {
+            "top_left":ctx.project["name"],
+            "top_right":ctx.entity["name"],
+            "bottom_left":version_label
+        }
         
+        # and the slate
+        slate_text =  "Project: %s\n" % ctx.project["name"]
+        slate_text += "%s: %s\n" % (ctx.entity["type"], ctx.entity["name"])
+        slate_text += "Name: %s\n" % name.capitalize()
+        slate_text += "Version: %s\n" % version_str
         
-    def __create_scale_node(self, width, height):
-        """
-        Create the Nuke scale node to resize the content.
-        """
-        scale = nuke.nodes.Reformat()
-        scale["type"].setValue("to box")
-        scale["box_width"].setValue(width)
-        scale["box_height"].setValue(height)
-        scale["resize"].setValue("fit")
-        scale["box_fixed"].setValue(True)
-        scale["center"].setValue(True)
-        scale["black_outside"].setValue(True)
-        return scale
+        if ctx.task:
+            slate_text += "Task: %s\n" % ctx.task["name"]
+        elif ctx.step:
+            slate_text += "Step: %s\n" % ctx.step["name"]
+        
+        slate_text += "Frames: %s - %s\n" % (first_frame, last_frame)
 
-    def __create_output_node(self, path):
-        """
-        Create the Nuke output node for the movie.
-        """
-        node = nuke.nodes.Write()
-
-        # Example output settings
-        #
-        # These are either hard coded by a studio in a quicktime generation app
-        # itself (like here) or part of the configuration - however there is
-        # often the need to have special rules to for example handle multi
-        # platform cases.
-        #
-
-        if sys.platform in ["darwin", "win32"]:
-            # On the mac and windows, we use the quicktime codec
-            node["file_type"].setValue("mov")
-            node["codec"].setValue("jpeg")
-
-        elif sys.platform == "linux2":
-            # On linux, use ffmpeg
-            node["file_type"].setValue("ffmpeg")
-            node["format"].setValue("MOV format (mov)")
-
-        node["file"].setValue(path.replace(os.sep, "/"))
-        return node  
+        # call hook to do the actual render:
+        self.__app.execute_hook_method("hook_render_movie", 
+                                       "render_movie",
+                                       path_to_frames = path,
+                                       output_path = output_path,
+                                       width = width, 
+                                       height = height, 
+                                       first_frame = first_frame, 
+                                       last_frame = last_frame, 
+                                       color_space = color_space, 
+                                       slate_text = slate_text,
+                                       slate_logo = self._slate_logo,
+                                       burnin_text = burnin_text)

@@ -98,13 +98,13 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         # Render and Submit
         progress_cb(20, "Rendering movie")
         renderer = tk_multi_reviewsubmission.Renderer()
-        renderer.render_movie_in_nuke(path, 
-                                      output_path, 
-                                      width, height, 
-                                      first_frame, last_frame,
-                                      fields.get("version", 0), 
-                                      fields.get("name", "Unnamed"),
-                                      color_space)
+        renderer.render_movie(path, 
+                              output_path, 
+                              width, height, 
+                              first_frame, last_frame,
+                              fields.get("version", 0), 
+                              fields.get("name", "Unnamed"),
+                              color_space)
 
         progress_cb(50, "Creating Shotgun Version and uploading movie")
         submitter = tk_multi_reviewsubmission.Submitter()

@@ -75,6 +75,12 @@ configuration:
                      any image format supported by Nuke is adequate. If this
                      setting is an empty string, no logo will be applied.
         default_value: ""
+        
+    hook_render_movie:
+        type: hook
+        default_value: "{self}/render_movie_{engine_name}.py"
+        description: Hook which renders the movie to be submitted from a set of input
+                     frames.        
 
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
