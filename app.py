@@ -37,6 +37,10 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         *** Deprecated ***
         Please use 'render_and_submit_version' instead
         """
+        self.log_warning("The method 'render_and_submit()' has been deprecated as it didn't allow the colorspace "
+                         "of the input frames to be specified.  Please use 'render_and_submit_version()' "
+                         "instead.")
+        
         # call new version
         return self.render_and_submit_version(template, fields, first_frame, last_frame, sg_publishes, sg_task,
                                   comment, thumbnail_path, progress_cb)
