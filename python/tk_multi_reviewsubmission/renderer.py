@@ -164,14 +164,19 @@ class Renderer(object):
         #
         # These are either hard coded by a studio in a quicktime generation app
         # itself (like here) or part of the configuration - however there is
-        # often the need to have special rules to for example handle multi
+        # often the need to have special rules to, for example, handle multi
         # platform cases.
         #
 
         if sys.platform in ["darwin", "win32"]:
             # On the mac and windows, we use the quicktime codec
             node["file_type"].setValue("mov")
-            node["codec"].setValue("jpeg")
+            # Nuke 9.0v1 changed the codec knob name and added an encoder knob
+            # (which defaults to the new mov64 encoder/decoder) 
+            if "meta_codec" in node.knobs():
+                node["meta_codec"].setValue("jpeg")
+            else:
+                node["codec"].setValue("jpeg")
 
         elif sys.platform == "linux2":
             # On linux, use ffmpeg
