@@ -173,7 +173,7 @@ class Renderer(object):
             node["file_type"].setValue("mov")
             # Nuke 9.0v1 changed the codec knob name and added an encoder knob
             # (which defaults to the new mov64 encoder/decoder) 
-            if not node.knob["codec"].setValue("jpeg"):
+            if "meta_codec" in node.knobs():
                 node["meta_codec"].setValue("jpeg")
             else:
                 node["codec"].setValue("jpeg")
