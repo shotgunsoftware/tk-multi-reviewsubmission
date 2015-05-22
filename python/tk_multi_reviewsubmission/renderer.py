@@ -183,5 +183,18 @@ class Renderer(object):
             node["file_type"].setValue("ffmpeg")
             node["format"].setValue("MOV format (mov)")
 
-        node["file"].setValue(path.replace(os.sep, "/"))
+        # Don't fail if we're in proxy mode. The default Nuke publish will fail if
+        # you try and publish while in proxy mode. But in earlier versions of 
+        # tk-multi-publish (< v0.6.9) if there is no proxy template set, it falls 
+        # back on the full-res version and will succeed. This handles that case
+        # and any custom cases where you may want to send your proxy render to 
+        # screening room. 
+        root_node = nuke.root()
+        is_proxy = root_node['proxy'].value()
+        if is_proxy:
+            self.__app.log_info("Proxy mode is ON. Rendering proxy.")
+            node["proxy"].setValue(path.replace(os.sep, "/"))
+        else:
+            node["file"].setValue(path.replace(os.sep, "/"))
+
         return node  
