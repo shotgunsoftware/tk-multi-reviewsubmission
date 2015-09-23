@@ -159,7 +159,8 @@ class Renderer(object):
         Create the Nuke output node for the movie.
         """
         # get the Write node settings we'll use for generating the Quicktime
-        wn_settings = self.__app.execute_hook("hook_reviewsubmission_quicktime_settings")
+        wn_settings = self.__app.execute_hook_method("codec_settings_hook", 
+                                                     "get_quicktime_settings")
         node = nuke.nodes.Write(**wn_settings)
         
         # Don't fail if we're in proxy mode. The default Nuke publish will fail if
