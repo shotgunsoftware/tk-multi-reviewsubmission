@@ -29,19 +29,24 @@ class CodecSettings(HookBaseClass):
         """
         settings = {}
         if sys.platform in ["darwin", "win32"]:
-            # On Mac and Windows, we use the Quicktime codec
             settings["file_type"] = "mov"
-            # Nuke 9.0v1 changed the codec knob name to meta_codec and added an encoder knob
-            # (which defaults to the new mov64 encoder/decoder).  
-            if nuke.NUKE_VERSION_MAJOR > 8:
+            if nuke.NUKE_VERSION_MAJOR >= 9:
+                # Nuke 9.0v1 changed the codec knob name to meta_codec and added an encoder knob
+                # (which defaults to the new mov64 encoder/decoder).                  
                 settings["meta_codec"] = "jpeg"
             else:
                 settings["codec"] = "jpeg"
 
         elif sys.platform == "linux2":
-            # On linux, use ffmpeg
-            settings["file_type"] = "ffmpeg"
-            settings["format"] = "MOV format (mov)"
+            if nuke.NUKE_VERSION_MAJOR >= 9:
+                # Nuke 9.0v1 removed ffmpeg and replaced it with the mov64 writer
+                # http://help.thefoundry.co.uk/nuke/9.0/#appendices/appendixc/supported_file_formats.html
+                settings["file_type"] = "mov64"
+                settings["mov64_codec"] = "jpeg"
+            else:
+                # the 'codec' knob name was changed to 'format' in Nuke 7.0
+                settings["file_type"] = "ffmpeg"
+                settings["format"] = "MOV format (mov)"
 
         return settings
 
