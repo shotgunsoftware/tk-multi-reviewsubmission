@@ -76,6 +76,12 @@ configuration:
                      setting is an empty string, no logo will be applied.
         default_value: ""
 
+    codec_settings_hook:
+        type: hook
+        description: Hook for customizing codec settings used when generating items
+                     for review.
+        default_value: '{self}/codec_settings.py'
+
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
 
