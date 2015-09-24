@@ -158,31 +158,11 @@ class Renderer(object):
         """
         Create the Nuke output node for the movie.
         """
-        node = nuke.nodes.Write()
-
-        # Example output settings
-        #
-        # These are either hard coded by a studio in a quicktime generation app
-        # itself (like here) or part of the configuration - however there is
-        # often the need to have special rules to, for example, handle multi
-        # platform cases.
-        #
-
-        if sys.platform in ["darwin", "win32"]:
-            # On the mac and windows, we use the quicktime codec
-            node["file_type"].setValue("mov")
-            # Nuke 9.0v1 changed the codec knob name and added an encoder knob
-            # (which defaults to the new mov64 encoder/decoder) 
-            if "meta_codec" in node.knobs():
-                node["meta_codec"].setValue("jpeg")
-            else:
-                node["codec"].setValue("jpeg")
-
-        elif sys.platform == "linux2":
-            # On linux, use ffmpeg
-            node["file_type"].setValue("ffmpeg")
-            node["format"].setValue("MOV format (mov)")
-
+        # get the Write node settings we'll use for generating the Quicktime
+        wn_settings = self.__app.execute_hook_method("codec_settings_hook", 
+                                                     "get_quicktime_settings")
+        node = nuke.nodes.Write(**wn_settings)
+        
         # Don't fail if we're in proxy mode. The default Nuke publish will fail if
         # you try and publish while in proxy mode. But in earlier versions of 
         # tk-multi-publish (< v0.6.9) if there is no proxy template set, it falls 
