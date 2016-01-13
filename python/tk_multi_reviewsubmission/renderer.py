@@ -161,7 +161,14 @@ class Renderer(object):
         # get the Write node settings we'll use for generating the Quicktime
         wn_settings = self.__app.execute_hook_method("codec_settings_hook", 
                                                      "get_quicktime_settings")
-        node = nuke.nodes.Write(**wn_settings)
+
+        node = nuke.nodes.Write(file_type=wn_settings.get("file_type"))
+        
+        # apply any additional knob settings provided by the hook. Now that the knob has been 
+        # created, we can be sure specific file_type settings will be valid.
+        for knob_name, knob_value in wn_settings.iteritems():
+            if knob_name != "file_type":
+                node.knob(knob_name).setValue(knob_value)
         
         # Don't fail if we're in proxy mode. The default Nuke publish will fail if
         # you try and publish while in proxy mode. But in earlier versions of 
