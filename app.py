@@ -31,6 +31,13 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         """
         pass
 
+    @property
+    def context_change_allowed(self):
+        """
+        Specifies that context changes are allowed.
+        """
+        return True
+
     def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task,
                           comment, thumbnail_path, progress_cb):
         """
