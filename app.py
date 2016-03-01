@@ -133,11 +133,7 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
 
         # log metrics for this app's usage
         try:
-            self.log_metric("Render & Submit Version")
-            self.engine.log_user_attribute_metric(
-                "%s version" % (self.name,),
-                self.version
-            )
+            self.log_metric("Render & Submit Version", log_version=True)
         except:
             # ingore any errors. ex: metrics logging not supported
             pass
