@@ -131,4 +131,11 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
             progress_cb(90, "Deleting rendered movie")
             os.unlink(output_path)
 
+        # log metrics for this app's usage
+        try:
+            self.log_metric("Render & Submit Version", log_version=True)
+        except:
+            # ingore any errors. ex: metrics logging not supported
+            pass
+
         return sg_version
