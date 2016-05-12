@@ -34,6 +34,7 @@ class CodecSettings(HookBaseClass):
                 # Nuke 9.0v1 changed the codec knob name to meta_codec and added an encoder knob
                 # (which defaults to the new mov64 encoder/decoder).                  
                 settings["meta_codec"] = "jpeg"
+                settings["mov64_quality_max"] = "3"
             else:
                 settings["codec"] = "jpeg"
 
@@ -43,6 +44,7 @@ class CodecSettings(HookBaseClass):
                 # http://help.thefoundry.co.uk/nuke/9.0/#appendices/appendixc/supported_file_formats.html
                 settings["file_type"] = "mov64"
                 settings["mov64_codec"] = "jpeg"
+                settings["mov64_quality_max"] = "3"
             else:
                 # the 'codec' knob name was changed to 'format' in Nuke 7.0
                 settings["file_type"] = "ffmpeg"
