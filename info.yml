@@ -64,6 +64,14 @@ configuration:
                      number padding in the movie filename. See movie_path_template.
                      Use 1 for no padding.
 
+    sg_version_name_template:
+        type: template
+        fields: context, version, [output], [name], *
+        description: "Template used to populate the version name in Shotgun. You can use any field 
+                     from the current context (such as for example Shot and Sequence) and the template
+                     must include current version.  Additionally, output and name fields will be used 
+                     if they are defined."
+
     slate_logo:
         type: config_path
         description: This is the path to an image to use on the slate such as a

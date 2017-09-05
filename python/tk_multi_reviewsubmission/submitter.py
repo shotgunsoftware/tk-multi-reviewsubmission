@@ -22,7 +22,7 @@ class Submitter(object):
         """
         self.__app = sgtk.platform.current_bundle()
     
-    def submit_version(self, path_to_frames, path_to_movie, thumbnail_path, sg_publishes,
+    def submit_version(self, version_name, path_to_frames, path_to_movie, thumbnail_path, sg_publishes,
                         sg_task, comment, store_on_disk, first_frame, last_frame, 
                         upload_to_shotgun):
         """
@@ -31,19 +31,21 @@ class Submitter(object):
         
         # get current shotgun user
         current_user = sgtk.util.get_current_user(self.__app.sgtk)
-        
-        # create a name for the version based on the file name
-        # grab the file name, strip off extension
-        name = os.path.splitext(os.path.basename(path_to_movie))[0]
-        # do some replacements
-        name = name.replace("_", " ")
-        # and capitalize
-        name = name.capitalize()
+
+        # If no version name is defined in the env config...
+        if not version_name:
+            # create a name for the version based on the file name
+            # grab the file name, strip off extension
+            version_name = os.path.splitext(os.path.basename(path_to_movie))[0]
+            # do some replacements
+            version_name = version_name.replace("_", " ")
+            # and capitalize
+            version_name = version_name.capitalize()
         
         # Create the version in Shotgun
         ctx = self.__app.context
         data = {
-            "code": name,
+            "code": version_name,
             "sg_status_list": self.__app.get_setting("new_version_status"),
             "entity": ctx.entity,
             "sg_task": sg_task,

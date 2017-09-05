@@ -102,6 +102,10 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         output_path_template = self.get_template("movie_path_template")
         output_path = output_path_template.apply_fields(fields)
 
+        # Get the name for the Version entity
+        version_template = self.get_template("sg_version_name_template")
+        version_name = version_template.apply_fields(fields)
+
         # Render and Submit
         progress_cb(20, "Rendering movie")
         renderer = tk_multi_reviewsubmission.Renderer()
@@ -115,7 +119,8 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
 
         progress_cb(50, "Creating Shotgun Version and uploading movie")
         submitter = tk_multi_reviewsubmission.Submitter()
-        sg_version = submitter.submit_version(path, 
+        sg_version = submitter.submit_version(version_name,
+                                              path, 
                                               output_path,
                                               thumbnail_path,
                                               sg_publishes, 
