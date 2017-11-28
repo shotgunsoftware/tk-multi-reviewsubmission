@@ -20,7 +20,7 @@ Group {
   size 48
   yjustify top
   Transform 1
-  box {{40 40} {"\[value root.height]-40" 1516} 840 1310}
+  box {{40 40} {"\[value root.height]-40" 1516} 840 -1310}
   name top_left_text
   xpos 389
   ypos 212
@@ -42,7 +42,7 @@ Group {
   xjustify right
   yjustify top
   Transform 1
-  box {{"\[value root.width]-40" i 2008} {"\[value root.height]-40" i 1516} 1200 1280}
+  box {{"\[value root.width]-40" i 2008} {"\[value root.height]-40" i 1516} 1200 -1280}
   name top_right_text
   xpos 389
   ypos 262
