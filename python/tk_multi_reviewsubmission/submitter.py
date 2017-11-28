@@ -22,9 +22,9 @@ class Submitter(object):
         """
         self.__app = sgtk.platform.current_bundle()
     
-    def submit_version(self, version_name, path_to_frames, path_to_movie, thumbnail_path, sg_publishes,
+    def submit_version(self, path_to_frames, path_to_movie, thumbnail_path, sg_publishes,
                         sg_task, comment, store_on_disk, first_frame, last_frame, 
-                        upload_to_shotgun):
+                        upload_to_shotgun, version_name=None):
         """
         Create a version in Shotgun for this path and linked to this publish.
         """

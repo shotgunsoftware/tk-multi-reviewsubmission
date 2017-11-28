@@ -104,7 +104,9 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
 
         # Get the name for the Version entity
         version_template = self.get_template("sg_version_name_template")
-        version_name = version_template.apply_fields(fields)
+        version_name = None
+        if version_template:
+            version_name = version_template.apply_fields(fields)
 
         # Render and Submit
         progress_cb(20, "Rendering movie")
@@ -119,8 +121,7 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
 
         progress_cb(50, "Creating Shotgun Version and uploading movie")
         submitter = tk_multi_reviewsubmission.Submitter()
-        sg_version = submitter.submit_version(version_name,
-                                              path, 
+        sg_version = submitter.submit_version(path, 
                                               output_path,
                                               thumbnail_path,
                                               sg_publishes, 
@@ -129,7 +130,8 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
                                               store_on_disk,
                                               first_frame, 
                                               last_frame,
-                                              upload_to_shotgun)
+                                              upload_to_shotgun,
+                                              version_name)
             
         # Remove from filesystem if required
         if not store_on_disk and os.path.exists(output_path):
