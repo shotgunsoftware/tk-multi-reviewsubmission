@@ -27,17 +27,18 @@ class Renderer(object):
         Construction
         """
         self.__app = sgtk.platform.current_bundle()
+        self._font = os.path.join(self.__app.disk_location, "resources", "liberationsans_regular.ttf")
 
-        self._burnin_nk = os.path.join(self.__app.disk_location, "resources", "burnin.nk")
-        self._font = os.path.join(self.__app.disk_location, "resources",
-                                  "liberationsans_regular.ttf")
+        burnin_template = self.__app.get_template("burnin_path")
+        self._burnin_nk = burnin_template.apply_fields({})
+        # If a show specific burnin file has not been defined, take it from the default location
+        if not os.path.isfile(self._burnin_nk):
+            self._burnin_nk = os.path.join(self.__app.disk_location, "resources", "burnin.nk")
 
-        # If the slate_logo supplied was an empty string, the result of getting
-        # the setting will be the config folder which is invalid so catch that
-        # and make our logo path an empty string which Nuke won't have issues with.
         self._logo = None
-        if os.path.isfile(self.__app.get_setting("slate_logo", "")):
-            self._logo = self.__app.get_setting("slate_logo", "")
+        logo_template = self.__app.get_template("slate_logo")
+        if os.path.isfile(logo_template.apply_fields({})):
+            self._logo = logo_template.apply_fields({})
         else:
             self._logo = ""
 

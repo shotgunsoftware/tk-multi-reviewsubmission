@@ -73,8 +73,9 @@ configuration:
                      if they are defined."
 
     slate_logo:
-        type: config_path
-        description: This is the path to an image to use on the slate such as a
+        type: template
+        fields: context
+        description: This is the template for a path to an image to use on the slate such as a
                      company logo. The supplied image will be reformated into a 
                      400 pixel box and the lower left corner of the logo will be
                      aligned 100 pixels to the right and 100 pixels above the
@@ -82,7 +83,6 @@ configuration:
                      an alpha channel if you want to add transparency. Currently
                      any image format supported by Nuke is adequate. If this
                      setting is an empty string, no logo will be applied.
-        default_value: ""
 
     codec_settings_hook:
         type: hook
@@ -104,6 +104,12 @@ configuration:
         type: str
         description: The path to the application executable on Mac OS X.
         default_value: ""
+
+    burnin_path:
+        type: template
+        fields: context
+        description: Template for burnin nuke file path
+
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
 
