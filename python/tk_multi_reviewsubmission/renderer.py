@@ -1,34 +1,42 @@
 # Copyright (c) 2013 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import sgtk
 import os
 import sys
-import nuke
+
+import subprocess
+import traceback
+
+try:
+    import nuke
+except:
+    nuke = None
+
 
 class Renderer(object):
-    
     def __init__(self):
         """
         Construction
         """
-        self.__app = sgtk.platform.current_bundle() 
-        
+        self.__app = sgtk.platform.current_bundle()
+
         self._burnin_nk = os.path.join(self.__app.disk_location, "resources", "burnin.nk")
-        self._font = os.path.join(self.__app.disk_location, "resources", "liberationsans_regular.ttf")
-        
-        # If the slate_logo supplied was an empty string, the result of getting 
+        self._font = os.path.join(self.__app.disk_location, "resources",
+                                  "liberationsans_regular.ttf")
+
+        # If the slate_logo supplied was an empty string, the result of getting
         # the setting will be the config folder which is invalid so catch that
         # and make our logo path an empty string which Nuke won't have issues with.
         self._logo = None
-        if os.path.isfile( self.__app.get_setting("slate_logo", "") ):
+        if os.path.isfile(self.__app.get_setting("slate_logo", "")):
             self._logo = self.__app.get_setting("slate_logo", "")
         else:
             self._logo = ""
@@ -37,151 +45,200 @@ class Renderer(object):
         if sys.platform == "win32":
             self._font = self._font.replace(os.sep, "/")
             self._logo = self._logo.replace(os.sep, "/")
-            self._burnin_nk = self._burnin_nk.replace(os.sep, "/") 
+            self._burnin_nk = self._burnin_nk.replace(os.sep, "/")
 
-    def render_movie_in_nuke(self, path, output_path, 
-                             width, height, 
-                             first_frame, last_frame, 
-                             version, name, 
-                             color_space):
-        """
-        Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
-                        
-        :param path:        Path to the input frames for the movie
-        :param output_path: Path to the output movie that will be rendered
-        :param width:       Width of the output movie
-        :param height:      Height of the output movie
-        :param first_frame: Start frame for the output movie
-        :param last_frame:  End frame for the output movie
-        :param version:     Version number to use for the output movie slate and burn-in
-        :param name:        Name to use in the slate for the output movie
-        :param color_space: Colorspace of the input frames
-        """
-        output_node = None
-        ctx = self.__app.context
+    def gather_nuke_render_info(self, path, output_path,
+                                width, height,
+                                first_frame, last_frame,
+                                version, name,
+                                color_space, override_context=None):
 
-        # create group where everything happens
-        group = nuke.nodes.Group()
-        
-        # now operate inside this group
-        group.begin()
-        try:
-            # create read node
-            read = nuke.nodes.Read(name="source", file=path.replace(os.sep, "/"))
-            read["on_error"].setValue("black")
-            read["first"].setValue(first_frame)
-            read["last"].setValue(last_frame)
-            if color_space:
-                read["colorspace"].setValue(color_space)
-            
-            # now create the slate/burnin node
-            burn = nuke.nodePaste(self._burnin_nk) 
-            burn.setInput(0, read)
-        
-            # set the fonts for all text fields
-            burn.node("top_left_text")["font"].setValue(self._font)
-            burn.node("top_right_text")["font"].setValue(self._font)
-            burn.node("bottom_left_text")["font"].setValue(self._font)
-            burn.node("framecounter")["font"].setValue(self._font)
-            burn.node("slate_info")["font"].setValue(self._font)
-        
-            # add the logo
-            burn.node("logo")["file"].setValue(self._logo)
-            
-            # format the burnins
-            version_padding_format = "%%0%dd" % self.__app.get_setting("version_number_padding")
-            version_str = version_padding_format % version
-            
-            if ctx.task:
-                version_label = "%s, v%s" % (ctx.task["name"], version_str)
-            elif ctx.step:
-                version_label = "%s, v%s" % (ctx.step["name"], version_str)
-            else:
-                version_label = "v%s" % version_str
-            
-            burn.node("top_left_text")["message"].setValue(ctx.project["name"])
-            burn.node("top_right_text")["message"].setValue(ctx.entity["name"])
-            burn.node("bottom_left_text")["message"].setValue(version_label)
-            
-            # and the slate            
-            slate_str =  "Project: %s\n" % ctx.project["name"]
-            slate_str += "%s: %s\n" % (ctx.entity["type"], ctx.entity["name"])
-            slate_str += "Name: %s\n" % name.capitalize()
-            slate_str += "Version: %s\n" % version_str
-            
-            if ctx.task:
-                slate_str += "Task: %s\n" % ctx.task["name"]
-            elif ctx.step:
-                slate_str += "Step: %s\n" % ctx.step["name"]
-            
-            slate_str += "Frames: %s - %s\n" % (first_frame, last_frame)
-            
-            burn.node("slate_info")["message"].setValue(slate_str)
+        nuke_render_info = {}
 
-            # create a scale node
-            scale = self.__create_scale_node(width, height)
-            scale.setInput(0, burn)                
+        # First get Nuke executable path from project configuration environment
+        setting_key_by_os = {'win32': 'nuke_windows_path',
+                             'linux2': 'nuke_linux_path',
+                             'darwin': 'nuke_mac_path'}
+        nuke_exe_path = self.__app.get_setting(setting_key_by_os[sys.platform])
 
-            # Create the output node
-            output_node = self.__create_output_node(output_path)
-            output_node.setInput(0, scale)
-        finally:
-            group.end()
-    
-        if output_node:
-            # Make sure the output folder exists
-            output_folder = os.path.dirname(output_path)
-            self.__app.ensure_folder_exists(output_folder)
-            
-            # Render the outputs, first view only
-            nuke.executeMultiple([output_node], ([first_frame-1, last_frame, 1],), [nuke.views()[0]])
-
-        # Cleanup after ourselves
-        nuke.delete(group)
-        
-        
-    def __create_scale_node(self, width, height):
-        """
-        Create the Nuke scale node to resize the content.
-        """
-        scale = nuke.nodes.Reformat()
-        scale["type"].setValue("to box")
-        scale["box_width"].setValue(width)
-        scale["box_height"].setValue(height)
-        scale["resize"].setValue("fit")
-        scale["box_fixed"].setValue(True)
-        scale["center"].setValue(True)
-        scale["black_outside"].setValue(True)
-        return scale
-
-    def __create_output_node(self, path):
-        """
-        Create the Nuke output node for the movie.
-        """
-        # get the Write node settings we'll use for generating the Quicktime
-        wn_settings = self.__app.execute_hook_method("codec_settings_hook", 
-                                                     "get_quicktime_settings")
-
-        node = nuke.nodes.Write(file_type=wn_settings.get("file_type"))
-        
-        # apply any additional knob settings provided by the hook. Now that the knob has been 
-        # created, we can be sure specific file_type settings will be valid.
-        for knob_name, knob_value in wn_settings.iteritems():
-            if knob_name != "file_type":
-                node.knob(knob_name).setValue(knob_value)
-        
-        # Don't fail if we're in proxy mode. The default Nuke publish will fail if
-        # you try and publish while in proxy mode. But in earlier versions of 
-        # tk-multi-publish (< v0.6.9) if there is no proxy template set, it falls 
-        # back on the full-res version and will succeed. This handles that case
-        # and any custom cases where you may want to send your proxy render to 
-        # screening room. 
-        root_node = nuke.root()
-        is_proxy = root_node['proxy'].value()
-        if is_proxy:
-            self.__app.log_info("Proxy mode is ON. Rendering proxy.")
-            node["proxy"].setValue(path.replace(os.sep, "/"))
+        if os.path.split(nuke_exe_path)[0] != '':
+            nuke_version_str = os.path.basename(os.path.dirname(nuke_exe_path))  # get Nuke version folder
         else:
-            node["file"].setValue(path.replace(os.sep, "/"))
+            nuke_version_str = os.path.basename(nuke_exe_path).replace('.exe', '').replace('app', '')
 
-        return node  
+        # get the Write node settings we'll use for generating the Quicktime
+        writenode_quicktime_settings = self.__app.execute_hook_method("codec_settings_hook",
+                                                                      "get_quicktime_settings",
+                                                                      nuke_version_str=nuke_version_str)
+
+        render_script_path = os.path.join(self.__app.disk_location, "hooks",
+                                          "nuke_batch_render_movie.py")
+        ctx = self.__app.context
+        if override_context:
+            ctx = override_context
+
+        shotgun_context = {}
+        shotgun_context[ctx.entity.get('type').lower()] = ctx.entity.copy()
+        for add_entity in ctx.additional_entities:
+            shotgun_context[add_entity.get('type').lower()] = add_entity.copy()
+        if ctx.task:
+            shotgun_context['task'] = ctx.task.copy()
+        if ctx.step:
+            shotgun_context['step'] = ctx.task.copy()
+        shotgun_context['project'] = ctx.project.copy()
+
+        app_settings = {
+            'version_number_padding': self.__app.get_setting('version_number_padding'),
+            'slate_logo': self._logo,
+        }
+
+        render_info = {
+            'burnin_nk': self._burnin_nk,
+            'slate_font': self._font,
+            'codec_settings': {'quicktime': writenode_quicktime_settings},
+        }
+
+        # # you can specify extra/override environment variables to pass to the Nuke execution
+        # # if you need to (e.g. pass along NUKE_INTERACTIVE or foundry_LICENSE, etc.)
+        # extra_env = nuke_settings.get('extra_env', {})
+        # for k, v in extra_env.iteritems():
+        #     env_value = ''
+        #     if type(v) is dict:
+        #         # this means per OS value (key is value from sys.platform)
+        #         env_value = str(v.get(sys.platform, ''))
+        #     else:
+        #         env_value = str(v)  # ensure env var values are all string
+        #     # only add to environment if value is not empty
+        #     if env_value:
+        #         extra_env[k] = env_value
+
+        # set needed paths and force them to use forward slashes for use in Nuke (latter needed for Windows)
+        src_frames_path = path.replace('\\', '/')
+        movie_output_path = output_path.replace('\\', '/')
+
+        nuke_render_info = {
+            'width': width,
+            'height': height,
+            'first_frame': first_frame,
+            'last_frame': last_frame,
+            'version': version,
+            'name': name,
+            'color_space': color_space,
+            'nuke_exe_path': nuke_exe_path,
+            'nuke_version_str': nuke_version_str,
+            'writenode_quicktime_settings': writenode_quicktime_settings,
+            'render_script_path': render_script_path,
+            'shotgun_context': shotgun_context,
+            'app_settings': app_settings,
+            'render_info': render_info,
+            # 'extra_env': extra_env,
+            'src_frames_path': src_frames_path,
+            'movie_output_path': movie_output_path,
+        }
+
+        return nuke_render_info
+
+    def render_movie_in_nuke(self, path, output_path,
+                             width, height,
+                             first_frame, last_frame,
+                             version, name,
+                             color_space, override_context=None,
+                             active_progress_info=None):
+
+        render_info = self.gather_nuke_render_info(path, output_path, width, height, first_frame,
+                                                   last_frame,
+                                                   version, name, color_space, override_context)
+
+        run_in_batch_mode = True if nuke is None else False  # if nuke module wasn't imported it will be None
+
+        if run_in_batch_mode:
+            # --------------------------------------------------------------------------------------------
+            #
+            #  Running within Nuke interactive ...
+            #
+            # --------------------------------------------------------------------------------------------
+
+            # Set-up the subprocess command and arguments
+            cmd_and_args = [
+                render_info.get('nuke_exe_path'), '-t', render_info.get('render_script_path'),
+                '--path', render_info.get('src_frames_path'),
+                '--output_path', render_info.get('movie_output_path'),
+                '--width', str(width), '--height', str(height), '--version', str(version), '--name',
+                name,
+                '--color_space', color_space,
+                '--first_frame', str(first_frame),
+                '--last_frame', str(last_frame),
+                '--app_settings', str(render_info.get('app_settings')),
+                '--shotgun_context', str(render_info.get('shotgun_context')),
+                '--render_info', str(render_info.get('render_info')),
+            ]
+
+            extra_env = render_info.get('extra_env', {})
+            if extra_env.get('NUKE_INTERACTIVE', '') in ('1',):
+                cmd_and_args.insert(1, '-i')
+
+            subprocess_env = os.environ.copy()
+            subprocess_env.update(extra_env)
+
+            p = subprocess.Popen(cmd_and_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                 env=subprocess_env)
+
+            output_name = os.path.basename(render_info.get('movie_output_path'))
+
+            progress_fn = progress_label = None
+            if active_progress_info:
+                progress_fn = active_progress_info.get('show_progress_fn')
+                progress_label = active_progress_info.get('label')
+
+            output_lines = []
+
+            num_frames = last_frame - first_frame + 1
+            write_count = 0
+
+            while p.poll() is None:
+                line = p.stdout.readline()
+                if line != '':
+                    output_lines.append(line.rstrip())
+
+                percent_complete = float(write_count) / float(num_frames) * 100.0
+                if progress_fn:
+                    progress_fn(progress_label,
+                                'Nuke: {0:03.1f}%, {1}'.format(percent_complete, output_name))
+
+                if line.startswith('Writing '):
+                    # The number of these lines will be number of frames + 1
+                    write_count += 1
+
+            if p.returncode != 0:
+                output_str = '\n'.join(output_lines)
+                # stmt = 'status_info = {0}'.format(output_str.split('[RETURN_STATUS_DATA]')[1])
+                # exec (stmt)
+                status_info = output_str.split('[RETURN_STATUS_DATA]')[1]
+                return status_info
+
+            return {'status': 'OK'}
+
+        else:
+            # --------------------------------------------------------------------------------------------
+            #
+            #  Running within Nuke interactive ...
+            #
+            # --------------------------------------------------------------------------------------------
+            import importlib
+
+            render_script_path = render_info.get('render_script_path')
+
+            script_dir_path, script_filename = os.path.split(render_script_path)
+            sys.path.append(script_dir_path)
+
+            render_script_module = importlib.import_module(script_filename.replace('.py', ''))
+            ret_status = render_script_module.render_movie_in_nuke(
+                render_info.get('src_frames_path'),
+                render_info.get('movie_output_path'),
+                width, height,
+                first_frame, last_frame,
+                version, name, color_space,
+                render_info.get('app_settings'),
+                render_info.get('shotgun_context'),
+                render_info.get('render_info'))
+            return ret_status

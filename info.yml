@@ -90,6 +90,20 @@ configuration:
                      for review.
         default_value: '{self}/codec_settings.py'
 
+    nuke_linux_path:
+        type: str
+        description: The path to the application executable on Linux.
+        default_value: ""
+
+    nuke_windows_path:
+        type: str
+        description: The path to the application executable on Windows.
+        default_value: ""
+
+    nuke_mac_path:
+        type: str
+        description: The path to the application executable on Mac OS X.
+        default_value: ""
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
 
