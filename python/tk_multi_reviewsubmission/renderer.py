@@ -52,7 +52,7 @@ class Renderer(object):
                                 width, height,
                                 first_frame, last_frame,
                                 version, name,
-                                color_space, override_context=None):
+                                color_space):
 
         nuke_render_info = {}
 
@@ -62,30 +62,37 @@ class Renderer(object):
                              'darwin': 'nuke_mac_path'}
         nuke_exe_path = self.__app.get_setting(setting_key_by_os[sys.platform])
 
-        if os.path.split(nuke_exe_path)[0] != '':
-            nuke_version_str = os.path.basename(os.path.dirname(nuke_exe_path))  # get Nuke version folder
+        if nuke:
+            nuke_version_major = nuke.NUKE_VERSION_MAJOR
         else:
-            nuke_version_str = os.path.basename(nuke_exe_path).replace('.exe', '').replace('app', '')
+            # TODO: get from nuke context somehow? Is this even required?
+            if os.path.split(nuke_exe_path)[0] != '':
+                nuke_version_str = os.path.basename(os.path.dirname(nuke_exe_path))  # get Nuke version folder
+            else:
+                nuke_version_str = os.path.basename(nuke_exe_path).replace('.exe', '').replace('app', '')
+
+            bits = nuke_version_str.split('v')
+            nuke_version_release = None
+            if len(bits) > 1:
+                nuke_version_release = bits[1]
+            nuke_version_major_minor = bits[0]
+            nuke_version_major = nuke_version_major_minor.split('.')[0]
 
         # get the Write node settings we'll use for generating the Quicktime
         writenode_quicktime_settings = self.__app.execute_hook_method("codec_settings_hook",
                                                                       "get_quicktime_settings",
-                                                                      nuke_version_str=nuke_version_str)
+                                                                      nuke_version_major=nuke_version_major)
 
         render_script_path = os.path.join(self.__app.disk_location, "hooks",
                                           "nuke_batch_render_movie.py")
         ctx = self.__app.context
-        if override_context:
-            ctx = override_context
 
         shotgun_context = {}
-        shotgun_context[ctx.entity.get('type').lower()] = ctx.entity.copy()
-        for add_entity in ctx.additional_entities:
-            shotgun_context[add_entity.get('type').lower()] = add_entity.copy()
+        shotgun_context['entity'] = ctx.entity.copy()
         if ctx.task:
             shotgun_context['task'] = ctx.task.copy()
         if ctx.step:
-            shotgun_context['step'] = ctx.task.copy()
+            shotgun_context['step'] = ctx.step.copy()
         shotgun_context['project'] = ctx.project.copy()
 
         app_settings = {
@@ -98,20 +105,6 @@ class Renderer(object):
             'slate_font': self._font,
             'codec_settings': {'quicktime': writenode_quicktime_settings},
         }
-
-        # # you can specify extra/override environment variables to pass to the Nuke execution
-        # # if you need to (e.g. pass along NUKE_INTERACTIVE or foundry_LICENSE, etc.)
-        # extra_env = nuke_settings.get('extra_env', {})
-        # for k, v in extra_env.iteritems():
-        #     env_value = ''
-        #     if type(v) is dict:
-        #         # this means per OS value (key is value from sys.platform)
-        #         env_value = str(v.get(sys.platform, ''))
-        #     else:
-        #         env_value = str(v)  # ensure env var values are all string
-        #     # only add to environment if value is not empty
-        #     if env_value:
-        #         extra_env[k] = env_value
 
         # set needed paths and force them to use forward slashes for use in Nuke (latter needed for Windows)
         src_frames_path = path.replace('\\', '/')
@@ -127,12 +120,10 @@ class Renderer(object):
             'color_space': color_space,
             'nuke_exe_path': nuke_exe_path,
             'nuke_version_str': nuke_version_str,
-            'writenode_quicktime_settings': writenode_quicktime_settings,
             'render_script_path': render_script_path,
             'shotgun_context': shotgun_context,
             'app_settings': app_settings,
             'render_info': render_info,
-            # 'extra_env': extra_env,
             'src_frames_path': src_frames_path,
             'movie_output_path': movie_output_path,
         }
@@ -143,12 +134,11 @@ class Renderer(object):
                              width, height,
                              first_frame, last_frame,
                              version, name,
-                             color_space, override_context=None,
+                             color_space,
                              active_progress_info=None):
 
         render_info = self.gather_nuke_render_info(path, output_path, width, height, first_frame,
-                                                   last_frame,
-                                                   version, name, color_space, override_context)
+                                                   last_frame, version, name, color_space)
 
         run_in_batch_mode = True if nuke is None else False  # if nuke module wasn't imported it will be None
 
@@ -174,18 +164,11 @@ class Renderer(object):
                 '--render_info', str(render_info.get('render_info')),
             ]
 
-            extra_env = render_info.get('extra_env', {})
-            if extra_env.get('NUKE_INTERACTIVE', '') in ('1',):
-                cmd_and_args.insert(1, '-i')
-
-            subprocess_env = os.environ.copy()
-            subprocess_env.update(extra_env)
-
-            p = subprocess.Popen(cmd_and_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                 env=subprocess_env)
+            p = subprocess.Popen(cmd_and_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             output_name = os.path.basename(render_info.get('movie_output_path'))
 
+            # TODO: How is this supposed to work?
             progress_fn = progress_label = None
             if active_progress_info:
                 progress_fn = active_progress_info.get('show_progress_fn')
@@ -212,10 +195,11 @@ class Renderer(object):
 
             if p.returncode != 0:
                 output_str = '\n'.join(output_lines)
-                # stmt = 'status_info = {0}'.format(output_str.split('[RETURN_STATUS_DATA]')[1])
-                # exec (stmt)
-                status_info = output_str.split('[RETURN_STATUS_DATA]')[1]
-                return status_info
+                print output_str
+                # TODO: Confirm this indeed appears on stdout
+                # status_info = output_str.split('[RETURN_STATUS_DATA]')[1]
+                # return status_info
+                return {'status': 'not OK'}
 
             return {'status': 'OK'}
 
