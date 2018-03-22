@@ -62,26 +62,9 @@ class Renderer(object):
                              'darwin': 'nuke_mac_path'}
         nuke_exe_path = self.__app.get_setting(setting_key_by_os[sys.platform])
 
-        if nuke:
-            nuke_version_major = nuke.NUKE_VERSION_MAJOR
-        else:
-            # TODO: get from nuke context somehow? Is this even required?
-            if os.path.split(nuke_exe_path)[0] != '':
-                nuke_version_str = os.path.basename(os.path.dirname(nuke_exe_path))  # get Nuke version folder
-            else:
-                nuke_version_str = os.path.basename(nuke_exe_path).replace('.exe', '').replace('app', '')
-
-            bits = nuke_version_str.split('v')
-            nuke_version_release = None
-            if len(bits) > 1:
-                nuke_version_release = bits[1]
-            nuke_version_major_minor = bits[0]
-            nuke_version_major = nuke_version_major_minor.split('.')[0]
-
         # get the Write node settings we'll use for generating the Quicktime
         writenode_quicktime_settings = self.__app.execute_hook_method("codec_settings_hook",
-                                                                      "get_quicktime_settings",
-                                                                      nuke_version_major=nuke_version_major)
+                                                                      "get_quicktime_settings")
 
         render_script_path = os.path.join(self.__app.disk_location, "hooks",
                                           "nuke_batch_render_movie.py")
@@ -119,7 +102,6 @@ class Renderer(object):
             'name': name,
             'color_space': color_space,
             'nuke_exe_path': nuke_exe_path,
-            'nuke_version_str': nuke_version_str,
             'render_script_path': render_script_path,
             'shotgun_context': shotgun_context,
             'app_settings': app_settings,

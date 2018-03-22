@@ -15,8 +15,6 @@ import sgtk
 import os
 import sys
 
-import nuke
-
 HookBaseClass = sgtk.get_hook_baseclass()
 
 class CodecSettings(HookBaseClass):
@@ -27,6 +25,11 @@ class CodecSettings(HookBaseClass):
         Returns a dictionary of settings to be used for the Write Node that generates
         the Quicktime in Nuke.
         """
+        # This hook file gets loaded even if overriden in sgtk_config.
+        # import causes error if not launched from nuke.
+        # Therefore, moving the import into the function.
+        import nuke
+
         settings = {}
         if sys.platform in ["darwin", "win32"]:
             settings["file_type"] = "mov"
