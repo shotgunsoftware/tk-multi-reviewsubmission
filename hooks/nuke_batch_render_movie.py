@@ -75,7 +75,11 @@ def render_movie_in_nuke(path, output_path,
     :param color_space: Colorspace of the input frames
     """
     output_node = None
-    # ctx = self.__app.context
+
+    # set Nuke root settings (since this is a subprocess with a fresh session)
+    root_node = nuke.root()
+    root_node["first_frame"].setValue(first_frame-1)
+    root_node["last_frame"].setValue(last_frame)
 
     # create group where everything happens
     group = nuke.nodes.Group()
@@ -90,6 +94,11 @@ def render_movie_in_nuke(path, output_path,
         read["last"].setValue(last_frame)
         if color_space:
             read["colorspace"].setValue(color_space)
+
+        # set root_format = res of read node
+        read_format = read.format()
+        read_format.add('READ_FORMAT')
+        root_node.knob('format').setValue('READ_FORMAT')
 
         # now create the slate/burnin node
         burn = nuke.nodePaste(render_info.get('burnin_nk'))
