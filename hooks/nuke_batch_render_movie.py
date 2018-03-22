@@ -1,3 +1,4 @@
+import ast
 import os
 import sys
 import traceback
@@ -60,7 +61,9 @@ def render_movie_in_nuke(path, output_path,
                          first_frame, last_frame,
                          version, name,
                          color_space,
-                         app_settings, ctx_info, render_info):
+                         app_settings,
+                         ctx_info, render_info,
+                         is_subprocess):
     """
     Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
 
@@ -75,11 +78,12 @@ def render_movie_in_nuke(path, output_path,
     :param color_space: Colorspace of the input frames
     """
     output_node = None
-
-    # set Nuke root settings (since this is a subprocess with a fresh session)
     root_node = nuke.root()
-    root_node["first_frame"].setValue(first_frame-1)
-    root_node["last_frame"].setValue(last_frame)
+
+    if is_subprocess:
+        # set Nuke root settings (since this is a subprocess with a fresh session)
+        root_node["first_frame"].setValue(first_frame)
+        root_node["last_frame"].setValue(last_frame)
 
     # create group where everything happens
     group = nuke.nodes.Group()
@@ -95,10 +99,11 @@ def render_movie_in_nuke(path, output_path,
         if color_space:
             read["colorspace"].setValue(color_space)
 
-        # set root_format = res of read node
-        read_format = read.format()
-        read_format.add('READ_FORMAT')
-        root_node.knob('format').setValue('READ_FORMAT')
+        if is_subprocess:
+            # set root_format = res of read node
+            read_format = read.format()
+            read_format.add('READ_FORMAT')
+            root_node.knob('format').setValue('READ_FORMAT')
 
         # now create the slate/burnin node
         burn = nuke.nodePaste(render_info.get('burnin_nk'))
@@ -107,6 +112,7 @@ def render_movie_in_nuke(path, output_path,
         font = render_info.get('slate_font')
 
         # set the fonts for all text fields
+        # TODO: find by class instead of using node names
         burn.node("top_left_text")["font"].setValue(font)
         burn.node("top_right_text")["font"].setValue(font)
         burn.node("bottom_left_text")["font"].setValue(font)
@@ -138,6 +144,7 @@ def render_movie_in_nuke(path, output_path,
         project = ctx_info.get('project', {})
         entity = ctx_info.get('entity', {})
 
+        # TODO: use context names instead positional so that the nodes can be moved around
         burn.node("top_left_text")["message"].setValue(project.get("name", ''))
         burn.node("top_right_text")["message"].setValue(entity.get("name", ''))
         burn.node("bottom_left_text")["message"].setValue(version_label)
@@ -186,7 +193,7 @@ def render_movie_in_nuke(path, output_path,
                 os.makedirs(output_folder)
 
             # Render the outputs, first view only
-            nuke.executeMultiple([output_node], ([first_frame - 1, last_frame, 1],),
+            nuke.executeMultiple([output_node], ([first_frame-1, last_frame, 1],),
                                  [nuke.views()[0]])
         except:
             return {'status': 'ERROR', 'error_msg': '{0}'.format(traceback.format_exc()),
@@ -218,7 +225,7 @@ def usage():
 
 
 if __name__ == '__main__':
-
+    # TODO: copied maquino's code. Refactor?
     data_keys = [
         'path', 'output_path', 'width', 'height', 'first_frame', 'last_frame',
         'version', 'name', 'color_space', 'app_settings', 'shotgun_context', 'render_info',
@@ -249,8 +256,7 @@ if __name__ == '__main__':
             d_key = opt.replace('--', '')
             input_data[d_key] = opt_value
             if d_key in non_str_data_list:
-                stmt = '''input_data[ d_key ] = {0}'''.format(opt_value)
-                exec (stmt)
+                input_data[d_key] = ast.literal_eval('''{0}'''.format(opt_value))
 
     for d_key in data_keys:
         if d_key not in input_data:
@@ -265,7 +271,8 @@ if __name__ == '__main__':
                                       input_data['color_space'],
                                       input_data['app_settings'],
                                       input_data['shotgun_context'],
-                                      input_data['render_info'])
+                                      input_data['render_info'],
+                                      is_subprocess=True)
 
     if ret_status.get('status', '') == 'OK':
         sys.exit(0)
