@@ -123,7 +123,7 @@ requires_core_version: "v0.14.0"
 requires_engine_version: 
 
 # For now this app is only compatible with Nuke.
-supported_engines: ["tk-nuke"]
+supported_engines:
 
 # the frameworks required to run this app
 frameworks:
