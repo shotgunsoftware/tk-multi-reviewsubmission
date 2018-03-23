@@ -63,7 +63,7 @@ def render_movie_in_nuke(path, output_path,
                          color_space,
                          app_settings,
                          ctx_info, render_info,
-                         is_subprocess):
+                         is_subprocess=False):
     """
     Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
 
@@ -90,6 +90,7 @@ def render_movie_in_nuke(path, output_path,
 
     # now operate inside this group
     group.begin()
+
     try:
         # create read node
         read = nuke.nodes.Read(name="source", file=path.replace(os.sep, "/"))
@@ -155,12 +156,6 @@ def render_movie_in_nuke(path, output_path,
         slate_str += "Name: %s\n" % name.capitalize()
         slate_str += "Version: %s\n" % version_str
 
-        # --- FOR DEBUGGING ONLY: set this next value to True in order to test an Exception occurring here
-        DEBUG_TEST_EXCEPTION = False
-        if DEBUG_TEST_EXCEPTION:
-            raise Exception(
-                "Forcing an Exception just to test how calling apps will respond to errors here.")
-
         if task:
             slate_str += "Task: %s\n" % task.get("name", '')
         elif step:
@@ -170,39 +165,29 @@ def render_movie_in_nuke(path, output_path,
 
         burn.node("slate_info")["message"].setValue(slate_str)
 
-        # create a scale node
+        # Create a scale node
         scale = __create_scale_node(width, height)
         scale.setInput(0, burn)
 
         # Create the output node
         output_node = __create_output_node(output_path, render_info.get('codec_settings', {}))
         output_node.setInput(0, scale)
-
-    except:
-        return {'status': 'ERROR', 'error_msg': '{0}'.format(traceback.format_exc()),
-                'output_path': output_path}
-
-    group.end()
+    finally:
+        group.end()
 
     if output_node:
-        try:
-            # Make sure the output folder exists
-            output_folder = os.path.dirname(output_path)
-            # self.__app.ensure_folder_exists(output_folder)
-            if not os.path.isdir(output_folder):
-                os.makedirs(output_folder)
+        # Make sure the output folder exists
+        output_folder = os.path.dirname(output_path)
+        # TODO: jsmk stuff?
+        if not os.path.isdir(output_folder):
+            os.makedirs(output_folder)
 
-            # Render the outputs, first view only
-            nuke.executeMultiple([output_node], ([first_frame-1, last_frame, 1],),
-                                 [nuke.views()[0]])
-        except:
-            return {'status': 'ERROR', 'error_msg': '{0}'.format(traceback.format_exc()),
-                    'output_path': output_path}
+        # Render the outputs, first view only
+        nuke.executeMultiple([output_node], ([first_frame-1, last_frame, 1],),
+                             [nuke.views()[0]])
 
     # Cleanup after ourselves
     nuke.delete(group)
-
-    return {'status': 'OK'}
 
 
 def usage():
@@ -240,7 +225,6 @@ if __name__ == '__main__':
     long_opt_list = ['help'] + ['{0}='.format(k) for k in data_keys]
 
     input_data = {}
-
     try:
         opt_list, arg_list = getopt.getopt(sys.argv[1:], short_opt_str, long_opt_list)
     except getopt.GetoptError as err:
@@ -264,17 +248,12 @@ if __name__ == '__main__':
             usage()
             sys.exit(2)
 
-    ret_status = render_movie_in_nuke(input_data['path'], input_data['output_path'],
-                                      input_data['width'], input_data['height'],
-                                      input_data['first_frame'], input_data['last_frame'],
-                                      input_data['version'], input_data['name'],
-                                      input_data['color_space'],
-                                      input_data['app_settings'],
-                                      input_data['shotgun_context'],
-                                      input_data['render_info'],
-                                      is_subprocess=True)
-
-    if ret_status.get('status', '') == 'OK':
-        sys.exit(0)
-    else:
-        sys.exit(3)
+    render_movie_in_nuke(input_data['path'], input_data['output_path'],
+                         input_data['width'], input_data['height'],
+                         input_data['first_frame'], input_data['last_frame'],
+                         input_data['version'], input_data['name'],
+                         input_data['color_space'],
+                         input_data['app_settings'],
+                         input_data['shotgun_context'],
+                         input_data['render_info'],
+                         is_subprocess=True)

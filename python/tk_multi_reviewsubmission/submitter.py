@@ -93,8 +93,12 @@ class Submitter(object):
         event_loop.exec_()
         
         # log any errors generated in the thread
-        for e in thread.get_errors():
-            self.__app.log_error(e)
+        thread_errors = thread.get_errors()
+        if thread_errors:
+            for e in thread_errors:
+                self.__app.log_error(e)
+            # make sure we don't display a success message. TODO: Custom exception?
+            raise Exception('\n'.join(thread_errors))
         
     
 

@@ -13,7 +13,6 @@ import os
 import sys
 
 import subprocess
-import traceback
 
 try:
     import nuke
@@ -53,7 +52,6 @@ class Renderer(object):
                                 first_frame, last_frame,
                                 version, name,
                                 color_space):
-
         nuke_render_info = {}
 
         # First get Nuke executable path from project configuration environment
@@ -121,9 +119,8 @@ class Renderer(object):
 
         render_info = self.gather_nuke_render_info(path, output_path, width, height, first_frame,
                                                    last_frame, version, name, color_space)
-
-        run_in_batch_mode = True if nuke is None else False  # if nuke module wasn't imported it will be None
-
+        # TODO: can we offload to a thread, similar to submitter?
+        run_in_batch_mode = True if nuke is None else False
         if run_in_batch_mode:
             # --------------------------------------------------------------------------------------------
             #
@@ -146,10 +143,9 @@ class Renderer(object):
                 '--render_info', str(render_info.get('render_info')),
             ]
 
-            p = subprocess.Popen(cmd_and_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(cmd_and_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             output_name = os.path.basename(render_info.get('movie_output_path'))
-
             # TODO: How is this supposed to work?
             progress_fn = progress_label = None
             if active_progress_info:
@@ -157,33 +153,37 @@ class Renderer(object):
                 progress_label = active_progress_info.get('label')
 
             output_lines = []
+            error_lines = []
 
             num_frames = last_frame - first_frame + 1
             write_count = 0
 
             while p.poll() is None:
-                line = p.stdout.readline()
-                if line != '':
-                    output_lines.append(line.rstrip())
+                stdout_line = p.stdout.readline()
+                stderr_line = p.stderr.readline()
 
-                percent_complete = float(write_count) / float(num_frames) * 100.0
+                if stdout_line != '':
+                    output_lines.append(stdout_line.rstrip())
+                if stderr_line != '':
+                    error_lines.append(stderr_line.rstrip())
+
+                percent_complete = float(write_count)/float(num_frames) * 100.0
                 if progress_fn:
                     progress_fn(progress_label,
                                 'Nuke: {0:03.1f}%, {1}'.format(percent_complete, output_name))
 
-                if line.startswith('Writing '):
+                if stdout_line.startswith('Writing '):
                     # The number of these lines will be number of frames + 1
                     write_count += 1
 
             if p.returncode != 0:
-                output_str = '\n'.join(output_lines)
-                print output_str
-                # TODO: Confirm this indeed appears on stdout
-                # status_info = output_str.split('[RETURN_STATUS_DATA]')[1]
-                # return status_info
-                return {'status': 'not OK'}
-
-            return {'status': 'OK'}
+                subproc_error_msg = '\n'.join(error_lines)
+                self.__app.log_error(subproc_error_msg)
+                # Do not clutter user message with any warnings etc from Nuke. Print only traceback.
+                # TODO: is there a better way?
+                subproc_traceback = 'Traceback' + subproc_error_msg.split('Traceback')[1]
+                # Make sure we don't display a success message. TODO: Custom exception?
+                raise Exception("Error in tk-multi-reviewsubmission: " + subproc_traceback)
 
         else:
             # --------------------------------------------------------------------------------------------
@@ -199,7 +199,7 @@ class Renderer(object):
             sys.path.append(script_dir_path)
 
             render_script_module = importlib.import_module(script_filename.replace('.py', ''))
-            ret_status = render_script_module.render_movie_in_nuke(
+            render_script_module.render_movie_in_nuke(
                 render_info.get('src_frames_path'),
                 render_info.get('movie_output_path'),
                 width, height,
@@ -208,4 +208,3 @@ class Renderer(object):
                 render_info.get('app_settings'),
                 render_info.get('shotgun_context'),
                 render_info.get('render_info'))
-            return ret_status
