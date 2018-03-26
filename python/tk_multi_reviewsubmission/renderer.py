@@ -16,7 +16,7 @@ import subprocess
 
 try:
     import nuke
-except:
+except ImportError:
     nuke = None
 
 
@@ -27,17 +27,19 @@ class Renderer(object):
         """
         self.__app = sgtk.platform.current_bundle()
         self._font = os.path.join(self.__app.disk_location, "resources", "liberationsans_regular.ttf")
+        context_fields = self.__app.context.as_template_fields()
 
         burnin_template = self.__app.get_template("burnin_path")
-        self._burnin_nk = burnin_template.apply_fields({})
+        self._burnin_nk = burnin_template.apply_fields(context_fields)
         # If a show specific burnin file has not been defined, take it from the default location
         if not os.path.isfile(self._burnin_nk):
             self._burnin_nk = os.path.join(self.__app.disk_location, "resources", "burnin.nk")
 
         self._logo = None
         logo_template = self.__app.get_template("slate_logo")
-        if os.path.isfile(logo_template.apply_fields({})):
-            self._logo = logo_template.apply_fields({})
+        logo_file_path = logo_template.apply_fields(context_fields)
+        if os.path.isfile(logo_file_path):
+            self._logo = logo_file_path
         else:
             self._logo = ""
 
@@ -52,8 +54,6 @@ class Renderer(object):
                                 first_frame, last_frame,
                                 version, name,
                                 color_space):
-        nuke_render_info = {}
-
         # First get Nuke executable path from project configuration environment
         setting_key_by_os = {'win32': 'nuke_windows_path',
                              'linux2': 'nuke_linux_path',
@@ -68,13 +68,12 @@ class Renderer(object):
                                           "nuke_batch_render_movie.py")
         ctx = self.__app.context
 
-        shotgun_context = {}
-        shotgun_context['entity'] = ctx.entity.copy()
+        shotgun_context = {'entity': ctx.entity.copy(),
+                           'project': ctx.project.copy()}
         if ctx.task:
             shotgun_context['task'] = ctx.task.copy()
         if ctx.step:
             shotgun_context['step'] = ctx.step.copy()
-        shotgun_context['project'] = ctx.project.copy()
 
         app_settings = {
             'version_number_padding': self.__app.get_setting('version_number_padding'),
@@ -87,7 +86,7 @@ class Renderer(object):
             'codec_settings': {'quicktime': writenode_quicktime_settings},
         }
 
-        # set needed paths and force them to use forward slashes for use in Nuke (latter needed for Windows)
+        # set needed paths and force them to use forward slashes for use in Nuke (for Windows)
         src_frames_path = path.replace('\\', '/')
         movie_output_path = output_path.replace('\\', '/')
 
@@ -107,7 +106,6 @@ class Renderer(object):
             'src_frames_path': src_frames_path,
             'movie_output_path': movie_output_path,
         }
-
         return nuke_render_info
 
     def render_movie_in_nuke(self, path, output_path,
