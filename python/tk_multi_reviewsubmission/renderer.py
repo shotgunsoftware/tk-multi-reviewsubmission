@@ -11,8 +11,8 @@
 import sgtk
 import os
 import sys
-
 import subprocess
+from sgtk.platform.qt import QtCore
 
 try:
     import nuke
@@ -117,92 +117,100 @@ class Renderer(object):
 
         render_info = self.gather_nuke_render_info(path, output_path, width, height, first_frame,
                                                    last_frame, version, name, color_space)
-        # TODO: can we offload to a thread, similar to submitter?
         run_in_batch_mode = True if nuke is None else False
-        if run_in_batch_mode:
-            # --------------------------------------------------------------------------------------------
-            #
-            #  Running within Nuke interactive ...
-            #
-            # --------------------------------------------------------------------------------------------
 
-            # Set-up the subprocess command and arguments
-            cmd_and_args = [
-                render_info.get('nuke_exe_path'), '-t', render_info.get('render_script_path'),
-                '--path', render_info.get('src_frames_path'),
-                '--output_path', render_info.get('movie_output_path'),
-                '--width', str(width), '--height', str(height), '--version', str(version), '--name',
-                name,
-                '--color_space', color_space,
-                '--first_frame', str(first_frame),
-                '--last_frame', str(last_frame),
-                '--app_settings', str(render_info.get('app_settings')),
-                '--shotgun_context', str(render_info.get('shotgun_context')),
-                '--render_info', str(render_info.get('render_info')),
-            ]
+        event_loop = QtCore.QEventLoop()
+        thread = ShooterThread(render_info, run_in_batch_mode)
+        thread.finished.connect(event_loop.quit)
+        thread.start()
+        event_loop.exec_()
 
-            p = subprocess.Popen(cmd_and_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # log any errors generated in the thread
+        thread_error_msg = thread.get_errors()
+        if thread_error_msg:
+            self.__app.log_error("OUTPUT:\n" + thread.get_output())
+            self.__app.log_error("ERROR:\n" + thread_error_msg)
 
-            output_name = os.path.basename(render_info.get('movie_output_path'))
-            # TODO: How is this supposed to work?
-            progress_fn = progress_label = None
-            if active_progress_info:
-                progress_fn = active_progress_info.get('show_progress_fn')
-                progress_label = active_progress_info.get('label')
+            # Do not clutter user message with any warnings etc from Nuke. Print only traceback.
+            # TODO: is there a better way?
+            try:
+                subproc_traceback = 'Traceback' + thread_error_msg.split('Traceback')[1]
+            except IndexError:
+                subproc_traceback = thread_error_msg
+            # Make sure we don't display a success message. TODO: Custom exception?
+            raise Exception("Error in tk-multi-reviewsubmission: " + subproc_traceback)
 
-            output_lines = []
-            error_lines = []
+class ShooterThread(QtCore.QThread):
+    def __init__(self, render_info, batch_mode=True, active_progress_info=None):
+        QtCore.QThread.__init__(self)
+        self.render_info = render_info
+        self.batch_mode = batch_mode
+        self.active_progress_info = active_progress_info
+        self.subproc_error_msg = ''
+        self.subproc_output = ''
 
-            num_frames = last_frame - first_frame + 1
-            write_count = 0
+    def get_errors(self):
+        return self.subproc_error_msg
 
-            while p.poll() is None:
-                stdout_line = p.stdout.readline()
-                stderr_line = p.stderr.readline()
+    def get_output(self):
+        return self.subproc_output
 
-                if stdout_line != '':
-                    output_lines.append(stdout_line.rstrip())
-                if stderr_line != '':
-                    error_lines.append(stderr_line.rstrip())
-
-                percent_complete = float(write_count)/float(num_frames) * 100.0
-                if progress_fn:
-                    progress_fn(progress_label,
-                                'Nuke: {0:03.1f}%, {1}'.format(percent_complete, output_name))
-
-                if stdout_line.startswith('Writing '):
-                    # The number of these lines will be number of frames + 1
-                    write_count += 1
-
-            if p.returncode != 0:
-                subproc_error_msg = '\n'.join(error_lines)
-                self.__app.log_error(subproc_error_msg)
-                # Do not clutter user message with any warnings etc from Nuke. Print only traceback.
-                # TODO: is there a better way?
-                subproc_traceback = 'Traceback' + subproc_error_msg.split('Traceback')[1]
-                # Make sure we don't display a success message. TODO: Custom exception?
-                raise Exception("Error in tk-multi-reviewsubmission: " + subproc_traceback)
-
+    def run(self):
+        if self.batch_mode:
+            nuke_flag = '-t'
         else:
-            # --------------------------------------------------------------------------------------------
-            #
-            #  Running within Nuke interactive ...
-            #
-            # --------------------------------------------------------------------------------------------
-            import importlib
+            nuke_flag = '-it'
 
-            render_script_path = render_info.get('render_script_path')
+        cmd_and_args = [
+            self.render_info['nuke_exe_path'], nuke_flag, self.render_info['render_script_path'],
+            '--path', self.render_info['src_frames_path'],
+            '--output_path', self.render_info['movie_output_path'],
+            '--width', str(self.render_info['width']),
+            '--height', str(self.render_info['height']),
+            '--version', str(self.render_info['version']),
+            '--name', self.render_info['name'],
+            '--color_space', self.render_info['color_space'],
+            '--first_frame', str(self.render_info['first_frame']),
+            '--last_frame', str(self.render_info['last_frame']),
+            '--app_settings', str(self.render_info['app_settings']),
+            '--shotgun_context', str(self.render_info['shotgun_context']),
+            '--render_info', str(self.render_info['render_info']),
+        ]
 
-            script_dir_path, script_filename = os.path.split(render_script_path)
-            sys.path.append(script_dir_path)
+        p = subprocess.Popen(cmd_and_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            render_script_module = importlib.import_module(script_filename.replace('.py', ''))
-            render_script_module.render_movie_in_nuke(
-                render_info.get('src_frames_path'),
-                render_info.get('movie_output_path'),
-                width, height,
-                first_frame, last_frame,
-                version, name, color_space,
-                render_info.get('app_settings'),
-                render_info.get('shotgun_context'),
-                render_info.get('render_info'))
+        output_name = os.path.basename(self.render_info['movie_output_path'])
+        # TODO: How is this supposed to work?
+        progress_fn = progress_label = None
+        if self.active_progress_info:
+            progress_fn = self.active_progress_info.get('show_progress_fn')
+            progress_label = self.active_progress_info.get('label')
+
+        output_lines = []
+        error_lines = []
+
+        num_frames = self.render_info['last_frame'] - self.render_info['first_frame'] + 1
+        write_count = 0
+
+        while p.poll() is None:
+            stdout_line = p.stdout.readline()
+            stderr_line = p.stderr.readline()
+
+            if stdout_line != '':
+                output_lines.append(stdout_line.rstrip())
+            if stderr_line != '':
+                error_lines.append(stderr_line.rstrip())
+
+            percent_complete = float(write_count) / float(num_frames) * 100.0
+            if progress_fn:
+                progress_fn(progress_label,
+                            'Nuke: {0:03.1f}%, {1}'.format(percent_complete, output_name))
+                # TODO: emit a signal to be captured by calling thread to update UI?
+
+            if stdout_line.startswith('Writing '):
+                # The number of these lines will be number of frames + 1
+                write_count += 1
+
+        self.subproc_output = '\n'.join(output_lines)
+        if p.returncode != 0:
+            self.subproc_error_msg = '\n'.join(error_lines)

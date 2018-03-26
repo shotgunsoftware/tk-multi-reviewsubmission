@@ -190,8 +190,8 @@ def render_movie_in_nuke(path, output_path,
     nuke.delete(group)
 
 
-def usage():
-    print('''
+def get_usage():
+    return '''
   Usage: python {0} [ OPTIONS ]
          -h | --help ... print this usage message and exit.
          --path <FRAME_PATH> ... specify full path to frames, with frame spec ... e.g. ".%04d.exr"
@@ -206,7 +206,7 @@ def usage():
          --app_settings <APP_SETTINGS> ... specify app settings from the Toolkit app calling this
          --shotgun_context <SHOTGUN_CONTEXT> ... specify shotgun context from the Toolkit app calling this
          --render_info <RENDER_INFO> ... specify render info from the Toolkit app calling this
-'''.format(os.path.basename(sys.argv[0])))
+'''.format(os.path.basename(sys.argv[0]))
 
 
 if __name__ == '__main__':
@@ -228,13 +228,13 @@ if __name__ == '__main__':
     try:
         opt_list, arg_list = getopt.getopt(sys.argv[1:], short_opt_str, long_opt_list)
     except getopt.GetoptError as err:
-        print(str(err))
-        usage()
+        sys.stderr.write(str(err))
+        sys.stderr.write(get_usage())
         sys.exit(1)
 
     for opt, opt_value in opt_list:
         if opt in ('-h', '--help'):
-            usage()
+            print get_usage()
             sys.exit(0)
         elif opt.replace('--', '') in data_keys:
             d_key = opt.replace('--', '')
@@ -244,8 +244,8 @@ if __name__ == '__main__':
 
     for d_key in data_keys:
         if d_key not in input_data:
-            print('ERROR - missing input argument for "--{0}" flag. Aborting'.format(d_key))
-            usage()
+            sys.stderr.write('ERROR - missing input argument for "--{0}". Aborting'.format(d_key))
+            sys.stderr.write(get_usage())
             sys.exit(2)
 
     render_movie_in_nuke(input_data['path'], input_data['output_path'],
