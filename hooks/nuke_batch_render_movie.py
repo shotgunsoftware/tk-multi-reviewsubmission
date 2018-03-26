@@ -1,5 +1,5 @@
-import ast
 import os
+import pickle
 import sys
 import traceback
 import getopt
@@ -237,7 +237,7 @@ if __name__ == '__main__':
             if d_key == 'shotgun_context':
                 input_data[d_key] = Context.deserialize(opt_value)
             elif d_key in non_str_data_list:
-                input_data[d_key] = ast.literal_eval('''{0}'''.format(opt_value))
+                input_data[d_key] = pickle.loads(opt_value)
             else:
                 input_data[d_key] = opt_value
 
