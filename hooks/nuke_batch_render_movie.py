@@ -4,6 +4,8 @@ import sys
 import traceback
 import getopt
 
+from sgtk.context import Context
+
 import nuke
 
 
@@ -62,7 +64,7 @@ def render_movie_in_nuke(path, output_path,
                          version, name,
                          color_space,
                          app_settings,
-                         ctx_info, render_info,
+                         ctx, render_info,
                          is_subprocess=False):
     """
     Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
@@ -132,34 +134,28 @@ def render_movie_in_nuke(path, output_path,
         version_padding_format = "%%0%dd" % ver_num_pad
         version_str = version_padding_format % version
 
-        task = ctx_info.get('task', {})
-        step = ctx_info.get('step', {})
-
-        if task:
-            version_label = "%s, v%s" % (task.get("name", ''), version_str)
-        elif step:
-            version_label = "%s, v%s" % (step.get("name", ''), version_str)
+        if ctx.task:
+            version_label = "%s, v%s" % (ctx.task["name"], version_str)
+        elif ctx.step:
+            version_label = "%s, v%s" % (ctx.step["name"], version_str)
         else:
             version_label = "v%s" % version_str
 
-        project = ctx_info.get('project', {})
-        entity = ctx_info.get('entity', {})
-
         # TODO: use context names instead positional so that the nodes can be moved around
-        burn.node("top_left_text")["message"].setValue(project.get("name", ''))
-        burn.node("top_right_text")["message"].setValue(entity.get("name", ''))
+        burn.node("top_left_text")["message"].setValue(ctx.project["name"])
+        burn.node("top_right_text")["message"].setValue(ctx.entity["name"])
         burn.node("bottom_left_text")["message"].setValue(version_label)
 
         # and the slate
-        slate_str = "Project: %s\n" % project.get("name", '')
-        slate_str += "%s: %s\n" % (entity.get("type", ''), entity.get("name", ''))
+        slate_str = "Project: %s\n" % ctx.project["name"]
+        slate_str += "%s: %s\n" % (ctx.entity["type"], ctx.entity["name"])
         slate_str += "Name: %s\n" % name.capitalize()
         slate_str += "Version: %s\n" % version_str
 
-        if task:
-            slate_str += "Task: %s\n" % task.get("name", '')
-        elif step:
-            slate_str += "Step: %s\n" % step.get("name", '')
+        if ctx.task:
+            slate_str += "Task: %s\n" % ctx.task["name"]
+        elif ctx.step:
+            slate_str += "Step: %s\n" % ctx.step["name"]
 
         slate_str += "Frames: %s - %s\n" % (first_frame, last_frame)
 
@@ -238,9 +234,12 @@ if __name__ == '__main__':
             sys.exit(0)
         elif opt.replace('--', '') in data_keys:
             d_key = opt.replace('--', '')
-            input_data[d_key] = opt_value
-            if d_key in non_str_data_list:
+            if d_key == 'shotgun_context':
+                input_data[d_key] = Context.deserialize(opt_value)
+            elif d_key in non_str_data_list:
                 input_data[d_key] = ast.literal_eval('''{0}'''.format(opt_value))
+            else:
+                input_data[d_key] = opt_value
 
     for d_key in data_keys:
         if d_key not in input_data:

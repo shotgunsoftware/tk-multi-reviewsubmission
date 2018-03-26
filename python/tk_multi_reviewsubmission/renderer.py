@@ -66,14 +66,8 @@ class Renderer(object):
 
         render_script_path = os.path.join(self.__app.disk_location, "hooks",
                                           "nuke_batch_render_movie.py")
-        ctx = self.__app.context
 
-        shotgun_context = {'entity': ctx.entity.copy(),
-                           'project': ctx.project.copy()}
-        if ctx.task:
-            shotgun_context['task'] = ctx.task.copy()
-        if ctx.step:
-            shotgun_context['step'] = ctx.step.copy()
+        serialized_context = self.__app.context.serialize()
 
         app_settings = {
             'version_number_padding': self.__app.get_setting('version_number_padding'),
@@ -100,7 +94,7 @@ class Renderer(object):
             'color_space': color_space,
             'nuke_exe_path': nuke_exe_path,
             'render_script_path': render_script_path,
-            'shotgun_context': shotgun_context,
+            'serialized_context': serialized_context,
             'app_settings': app_settings,
             'render_info': render_info,
             'src_frames_path': src_frames_path,
@@ -173,7 +167,7 @@ class ShooterThread(QtCore.QThread):
             '--first_frame', str(self.render_info['first_frame']),
             '--last_frame', str(self.render_info['last_frame']),
             '--app_settings', str(self.render_info['app_settings']),
-            '--shotgun_context', str(self.render_info['shotgun_context']),
+            '--shotgun_context', str(self.render_info['serialized_context']),
             '--render_info', str(self.render_info['render_info']),
         ]
 
