@@ -74,7 +74,7 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         # Make sure we don't overwrite the caller's fields
         fields = copy.copy(fields)
 
-        # Tweak fields so that we'll be getting nuke formated sequence markers (%03d, %04d etc):
+        # Tweak fields so that we'll be getting nuke formatted sequence markers (%03d, %04d etc):
         for key_name in [key.name for key in template.keys.values() if isinstance(key, sgtk.templatekey.SequenceKey)]:
             fields[key_name] = "FORMAT: %d"
 
