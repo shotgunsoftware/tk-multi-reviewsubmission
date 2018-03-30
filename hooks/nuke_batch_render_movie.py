@@ -242,6 +242,8 @@ if __name__ == '__main__':
             sys.stderr.write(get_usage())
             sys.exit(2)
 
+    # Hack to ensure all output/error from this process can be captured when called as subprocess
+    print ''
     render_movie_in_nuke(input_data['path'], input_data['output_path'],
                          input_data['width'], input_data['height'],
                          input_data['first_frame'], input_data['last_frame'],
