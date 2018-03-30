@@ -158,13 +158,13 @@ class ShooterThread(QtCore.QThread):
 
         cmd_and_args = [
             self.render_info['nuke_exe_path'], nuke_flag, self.render_info['render_script_path'],
-            '--path', self.render_info['src_frames_path'],
-            '--output_path', self.render_info['movie_output_path'],
+            '--path', pickle.dumps(self.render_info['src_frames_path']),
+            '--output_path', pickle.dumps(self.render_info['movie_output_path']),
             '--width', pickle.dumps(self.render_info['width']),
             '--height', pickle.dumps(self.render_info['height']),
             '--version', pickle.dumps(self.render_info['version']),
-            '--name', self.render_info['name'],
-            '--color_space', self.render_info['color_space'],
+            '--name', pickle.dumps(self.render_info['name']),
+            '--color_space', pickle.dumps(self.render_info['color_space']),
             '--first_frame', pickle.dumps(self.render_info['first_frame']),
             '--last_frame', pickle.dumps(self.render_info['last_frame']),
             '--app_settings', pickle.dumps(self.render_info['app_settings']),

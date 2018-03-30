@@ -143,12 +143,14 @@ def render_movie_in_nuke(path, output_path,
 
         # TODO: use context names instead positional so that the nodes can be moved around
         burn.node("top_left_text")["message"].setValue(ctx.project["name"])
-        burn.node("top_right_text")["message"].setValue(ctx.entity["name"])
+        if ctx.entity:
+            burn.node("top_right_text")["message"].setValue(ctx.entity["name"])
         burn.node("bottom_left_text")["message"].setValue(version_label)
 
         # and the slate
         slate_str = "Project: %s\n" % ctx.project["name"]
-        slate_str += "%s: %s\n" % (ctx.entity["type"], ctx.entity["name"])
+        if ctx.entity:
+            slate_str += "%s: %s\n" % (ctx.entity["type"], ctx.entity["name"])
         slate_str += "Name: %s\n" % name.capitalize()
         slate_str += "Version: %s\n" % version_str
 
@@ -212,11 +214,6 @@ if __name__ == '__main__':
         'version', 'name', 'color_space', 'app_settings', 'shotgun_context', 'render_info',
     ]
 
-    non_str_data_list = {
-        'width', 'height', 'first_frame', 'last_frame', 'version',
-        'app_settings', 'shotgun_context', 'render_info',
-    }
-
     short_opt_str = "h"
     long_opt_list = ['help'] + ['{0}='.format(k) for k in data_keys]
 
@@ -236,10 +233,8 @@ if __name__ == '__main__':
             d_key = opt.replace('--', '')
             if d_key == 'shotgun_context':
                 input_data[d_key] = Context.deserialize(opt_value)
-            elif d_key in non_str_data_list:
-                input_data[d_key] = pickle.loads(opt_value)
             else:
-                input_data[d_key] = opt_value
+                input_data[d_key] = pickle.loads(opt_value)
 
     for d_key in data_keys:
         if d_key not in input_data:
