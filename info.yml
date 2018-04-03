@@ -64,9 +64,18 @@ configuration:
                      number padding in the movie filename. See movie_path_template.
                      Use 1 for no padding.
 
+    sg_version_name_template:
+        type: template
+        fields: context, version, [output], [name], *
+        description: "Template used to populate the version name in Shotgun. You can use any field 
+                     from the current context (such as for example Shot and Sequence) and the template
+                     must include current version.  Additionally, output and name fields will be used 
+                     if they are defined."
+
     slate_logo:
-        type: config_path
-        description: This is the path to an image to use on the slate such as a
+        type: template
+        fields: context
+        description: This is the template for a path to an image to use on the slate such as a
                      company logo. The supplied image will be reformated into a 
                      400 pixel box and the lower left corner of the logo will be
                      aligned 100 pixels to the right and 100 pixels above the
@@ -74,13 +83,32 @@ configuration:
                      an alpha channel if you want to add transparency. Currently
                      any image format supported by Nuke is adequate. If this
                      setting is an empty string, no logo will be applied.
-        default_value: ""
 
     codec_settings_hook:
         type: hook
         description: Hook for customizing codec settings used when generating items
                      for review.
         default_value: '{self}/codec_settings.py'
+
+    nuke_linux_path:
+        type: str
+        description: The path to the application executable on Linux.
+        default_value: ""
+
+    nuke_windows_path:
+        type: str
+        description: The path to the application executable on Windows.
+        default_value: ""
+
+    nuke_mac_path:
+        type: str
+        description: The path to the application executable on Mac OS X.
+        default_value: ""
+
+    burnin_path:
+        type: template
+        fields: context
+        description: Template for burnin nuke file path
 
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
@@ -95,7 +123,7 @@ requires_core_version: "v0.14.0"
 requires_engine_version: 
 
 # For now this app is only compatible with Nuke.
-supported_engines: ["tk-nuke"]
+supported_engines:
 
 # the frameworks required to run this app
 frameworks:
