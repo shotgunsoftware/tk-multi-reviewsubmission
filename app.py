@@ -1,11 +1,11 @@
 # Copyright (c) 2013 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 """
@@ -17,6 +17,7 @@ import sgtk.templatekey
 import copy
 import os
 
+
 class MultiReviewSubmissionApp(sgtk.platform.Application):
     """
     Main Application class
@@ -25,7 +26,7 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
     def init_app(self):
         """
         App initialization
-        
+
         Note, this app doesn't register any commands at the moment as all it's functionality is
         provided through it's API.
         """
@@ -38,22 +39,56 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         """
         return True
 
-    def render_and_submit(self, template, fields, first_frame, last_frame, sg_publishes, sg_task,
-                          comment, thumbnail_path, progress_cb):
+    def render_and_submit(
+        self,
+        template,
+        fields,
+        first_frame,
+        last_frame,
+        sg_publishes,
+        sg_task,
+        comment,
+        thumbnail_path,
+        progress_cb,
+    ):
         """
         *** Deprecated ***
         Please use 'render_and_submit_version' instead
         """
-        self.log_warning("The method 'render_and_submit()' has been deprecated as it didn't allow the colorspace "
-                         "of the input frames to be specified.  Please use 'render_and_submit_version()' "
-                         "instead.")
-        
-        # call new version
-        return self.render_and_submit_version(template, fields, first_frame, last_frame, sg_publishes, sg_task,
-                                  comment, thumbnail_path, progress_cb)
+        self.log_warning(
+            "The method 'render_and_submit()' has been deprecated as it didn't allow the colorspace "
+            "of the input frames to be specified.  Please use 'render_and_submit_version()' "
+            "instead."
+        )
 
-    def render_and_submit_version(self, template, fields, first_frame, last_frame, sg_publishes, sg_task,
-                                  comment, thumbnail_path, progress_cb, color_space=None, *args, **kwargs):
+        # call new version
+        return self.render_and_submit_version(
+            template,
+            fields,
+            first_frame,
+            last_frame,
+            sg_publishes,
+            sg_task,
+            comment,
+            thumbnail_path,
+            progress_cb,
+        )
+
+    def render_and_submit_version(
+        self,
+        template,
+        fields,
+        first_frame,
+        last_frame,
+        sg_publishes,
+        sg_task,
+        comment,
+        thumbnail_path,
+        progress_cb,
+        color_space=None,
+        *args,
+        **kwargs
+    ):
         """
         Main application entry point to be called by other applications / hooks.
 
@@ -72,12 +107,14 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         :returns:               The Version Shotgun entity dictionary that was created.
         """
         tk_multi_reviewsubmission = self.import_module("tk_multi_reviewsubmission")
-        
+
         # Is the app configured to do anything?
         upload_to_shotgun = self.get_setting("upload_to_shotgun")
         store_on_disk = self.get_setting("store_on_disk")
         if not upload_to_shotgun and not store_on_disk:
-            self.log_warning("App is not configured to store images on disk nor upload to shotgun!")
+            self.log_warning(
+                "App is not configured to store images on disk nor upload to shotgun!"
+            )
             return None
 
         progress_cb(10, "Preparing")
@@ -86,7 +123,11 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         fields = copy.copy(fields)
 
         # Tweak fields so that we'll be getting nuke formated sequence markers (%03d, %04d etc):
-        for key_name in [key.name for key in template.keys.values() if isinstance(key, sgtk.templatekey.SequenceKey)]:
+        for key_name in [
+            key.name
+            for key in template.keys.values()
+            if isinstance(key, sgtk.templatekey.SequenceKey)
+        ]:
             fields[key_name] = "FORMAT: %d"
 
         # Get our input path for frames to convert to movie
@@ -105,27 +146,33 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         # Render and Submit
         progress_cb(20, "Rendering movie")
         renderer = tk_multi_reviewsubmission.Renderer()
-        renderer.render_movie_in_nuke(path, 
-                                      output_path, 
-                                      width, height, 
-                                      first_frame, last_frame,
-                                      fields.get("version", 0), 
-                                      fields.get("name", "Unnamed"),
-                                      color_space)
+        renderer.render_movie_in_nuke(
+            path,
+            output_path,
+            width,
+            height,
+            first_frame,
+            last_frame,
+            fields.get("version", 0),
+            fields.get("name", "Unnamed"),
+            color_space,
+        )
 
         progress_cb(50, "Creating Shotgun Version and uploading movie")
         submitter = tk_multi_reviewsubmission.Submitter()
-        sg_version = submitter.submit_version(path, 
-                                              output_path,
-                                              thumbnail_path,
-                                              sg_publishes, 
-                                              sg_task, 
-                                              comment, 
-                                              store_on_disk,
-                                              first_frame, 
-                                              last_frame,
-                                              upload_to_shotgun)
-            
+        sg_version = submitter.submit_version(
+            path,
+            output_path,
+            thumbnail_path,
+            sg_publishes,
+            sg_task,
+            comment,
+            store_on_disk,
+            first_frame,
+            last_frame,
+            upload_to_shotgun,
+        )
+
         # Remove from filesystem if required
         if not store_on_disk and os.path.exists(output_path):
             progress_cb(90, "Deleting rendered movie")
