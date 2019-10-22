@@ -1,11 +1,11 @@
 # Copyright (c) 2015 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 """
@@ -19,8 +19,8 @@ import nuke
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
-class CodecSettings(HookBaseClass):
 
+class CodecSettings(HookBaseClass):
     def get_quicktime_settings(self, **kwargs):
         """
         Allows modifying default codec settings for Quicktime generation.
@@ -32,7 +32,7 @@ class CodecSettings(HookBaseClass):
             settings["file_type"] = "mov"
             if nuke.NUKE_VERSION_MAJOR >= 9:
                 # Nuke 9.0v1 changed the codec knob name to meta_codec and added an encoder knob
-                # (which defaults to the new mov64 encoder/decoder).                  
+                # (which defaults to the new mov64 encoder/decoder).
                 settings["meta_codec"] = "jpeg"
                 settings["mov64_quality_max"] = "3"
             else:
