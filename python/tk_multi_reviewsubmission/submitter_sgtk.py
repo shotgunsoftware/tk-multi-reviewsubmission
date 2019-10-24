@@ -15,7 +15,7 @@ import os
 from sgtk.platform.qt import QtCore
 
 
-class Submitter(object):
+class SGTKSubmitter(object):
     def __init__(self):
         """
         Construction
