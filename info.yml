@@ -12,6 +12,11 @@
 
 # expected fields in the configuration file for this app
 configuration:
+    display_name:
+        type: str
+        default_value: Send for review
+        description: Specify the name that should be used in menus and the main
+
     upload_to_shotgun:
         type: bool
         default_value: true
@@ -19,6 +24,11 @@ configuration:
                      as a version or just kept on disk? Disabling this as well
                      as the store_on_disk option effectively disables the whole
                      tool.
+
+    submit_using_create:
+        type: bool
+        default_value: true
+        description: TODO !!!!!!
 
     store_on_disk:
         type: bool
@@ -28,6 +38,7 @@ configuration:
                      effectively disable the whole tool.
 
     movie_path_template:
+        allows_empty: True
         type: template
         required_fields: []
         optional_fields: "*"
@@ -43,12 +54,12 @@ configuration:
 
     movie_width:
         type: int
-        default_value: 1024
+        default_value: 1920
         description: The width of the rendered movie file
 
     movie_height:
         type: int
-        default_value: 540
+        default_value: 1080
         description: The height of the rendered movie file
 
     new_version_status:
@@ -82,12 +93,17 @@ configuration:
                      for review.
         default_value: '{self}/codec_settings.py'
 
+    render_media_hook:
+        type: hook
+        description: TODO!!!
+        default_value: '{self}/{engine_name}/render_media.py'
+
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
 
 # More verbose description of this item
 display_name: "Review Submission"
-description: "Provides functionality to submit image sequences to Shotgun for review."
+description: "Provides functionality to submit media to Shotgun for review."
 
 # Required minimum versions for this item to run
 requires_shotgun_version:
@@ -95,7 +111,8 @@ requires_core_version: "v0.14.0"
 requires_engine_version:
 
 # For now this app is only compatible with Nuke.
-supported_engines: ["tk-nuke"]
+supported_engines:
 
 # the frameworks required to run this app
 frameworks:
+    - {"name": "tk-framework-desktopclient", "version": "v0.x.x"}
