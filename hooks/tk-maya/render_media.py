@@ -1,0 +1,80 @@
+# Copyright (c) 2019 Shotgun Software Inc.
+#
+# CONFIDENTIAL AND PROPRIETARY
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
+# Source Code License included in this distribution package. See LICENSE.
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
+# not expressly granted therein are reserved by Shotgun Software Inc.
+
+
+import sgtk
+import tempfile
+import maya
+
+HookBaseClass = sgtk.get_hook_baseclass()
+
+
+class RenderMedia(HookBaseClass):
+    def render(
+        self,
+        input_path,
+        output_path,
+        width,
+        height,
+        first_frame,
+        last_frame,
+        version,
+        name,
+        color_space,
+    ):
+        """
+        Render the media using the Maya Playblast API
+
+        :param input_path:      Path to the input frames for the movie      (Unused)
+        :param output_path:     Path to the output movie that will be rendered
+        :param width:           Width of the output movie
+        :param height:          Height of the output movie
+        :param first_frame:     The first frame of the sequence of frames.  (Unused)
+        :param last_frame:      The last frame of the sequence of frames.   (Unused)
+        :param version:         Version number to use for the output movie slate and burn-in
+        :param name:            Name to use in the slate for the output movie
+        :param color_space:     Colorspace of the input frames              (Unused)
+
+        :returns:               Location of the rendered media
+        :rtype:                 str
+        """
+        # http://download.autodesk.com/us/maya/2011help/CommandsPython/playblast.html
+
+        playblast_args = {
+            "viewer": False,  # Specify whether a viewer should be launched for the playblast.
+            "forceOverwrite": True,  # Overwrite existing playblast files which may have the the same name as the one specified with the "-f" flag
+            "format": "qt",  # The format of the output of this playblast.
+        }
+
+        if not output_path:
+            output_path = self._get_temp_media_path(name, version)
+
+        playblast_args[
+            "filename"
+        ] = output_path  # The filename to use for the output of this playblast.
+
+        if width:
+            playblast_args[
+                "width"
+            ] = width  # Width of the final image. This value will be clamped if larger than the width of the active window.
+
+        if height:
+            playblast_args[
+                "height"
+            ] = height  # Height of the final image. This value will be clamped if larger than the width of the active window.
+
+        self.logger.info(
+            "Writing playblast to: %s using (%s)" % (output_path, playblast_args)
+        )
+
+        maya.cmds.playblast(**playblast_args)
+        self.logger.info("Playblast written")
+
+        return output_path
