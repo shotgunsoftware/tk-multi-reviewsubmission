@@ -16,7 +16,6 @@ import sgtk
 import sgtk.templatekey
 import copy
 import os
-import re
 
 
 class MultiReviewSubmissionApp(sgtk.platform.Application):
