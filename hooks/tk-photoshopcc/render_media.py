@@ -10,7 +10,6 @@
 
 
 import sgtk
-import tempfile
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
