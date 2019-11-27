@@ -44,6 +44,7 @@ class RenderMedia(HookBaseClass):
         :returns:               Location of the rendered media
         :rtype:                 str
         """
+        # For more informations about the playblast API,
         # http://download.autodesk.com/us/maya/2011help/CommandsPython/playblast.html
 
         playblast_args = {
@@ -53,21 +54,18 @@ class RenderMedia(HookBaseClass):
         }
 
         if not output_path:
-            output_path = self._get_temp_media_path(name, version)
+            output_path = self._get_temp_media_path(name, version, ".mov")
 
-        playblast_args[
-            "filename"
-        ] = output_path  # The filename to use for the output of this playblast.
+        # The filename to use for the output of this playblast.
+        playblast_args["filename"] = output_path
 
         if width:
-            playblast_args[
-                "width"
-            ] = width  # Width of the final image. This value will be clamped if larger than the width of the active window.
+            # Width of the final image. This value will be clamped if larger than the width of the active window.
+            playblast_args["width"] = width
 
         if height:
-            playblast_args[
-                "height"
-            ] = height  # Height of the final image. This value will be clamped if larger than the width of the active window.
+            # Height of the final image. This value will be clamped if larger than the width of the active window.
+            playblast_args["height"] = height
 
         self.logger.info(
             "Writing playblast to: %s using (%s)" % (output_path, playblast_args)

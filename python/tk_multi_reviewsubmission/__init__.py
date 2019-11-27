@@ -10,8 +10,6 @@
 
 from .actions import Actions
 
-__all__ = ["send_for_review", "render_and_submit_version"]
-
 
 def send_for_review():
     action = Actions()

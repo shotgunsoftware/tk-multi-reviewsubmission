@@ -55,8 +55,10 @@ class Actions(object):
         :param color_space:     The colorspace of the rendered frames
         """
 
-        if progress_cb:
-            progress_cb(20, "Building the rendering options dictionary")
+        # Wrap the method so we don't have to worry about process_cb being None
+        dispatch_progress = lambda *args: progress_cb is None or process_cb(*args)
+
+        dispatch_progress(20, "Building the rendering options dictionary")
 
         if not fields:
             fields = {}
@@ -64,8 +66,7 @@ class Actions(object):
         if not sg_publishes:
             sg_publishes = []
 
-        if progress_cb:
-            progress_cb(10, "Preparing")
+        dispatch_progress(10, "Preparing")
 
         # Make sure we don't overwrite the caller's fields
         fields = copy.copy(fields)
@@ -109,8 +110,7 @@ class Actions(object):
             "color_space": color_space,
         }
 
-        if progress_cb:
-            progress_cb(20, "Executing the pre-rende hook")
+        dispatch_progress(20, "Executing the pre-rende hook")
 
         self.__app.execute_hook_method(
             key="render_media_hook",
@@ -120,8 +120,7 @@ class Actions(object):
         )
 
         try:
-            if progress_cb:
-                progress_cb(30, "Executing the render hook")
+            dispatch_progress(30, "Executing the render hook")
 
             output_path = self.__app.execute_hook_method(
                 key="render_media_hook",
@@ -131,8 +130,7 @@ class Actions(object):
             )
 
         finally:
-            if progress_cb:
-                progress_cb(40, "Executing the post-render hook")
+            dispatch_progress(40, "Executing the post-render hook")
 
             self.__app.execute_hook_method(
                 key="render_media_hook",
@@ -141,8 +139,7 @@ class Actions(object):
                 **render_media_hook_args
             )
 
-        if progress_cb:
-            progress_cb(50, "Creating Shotgun Version and uploading movie")
+        dispatch_progress(50, "Creating Shotgun Version and uploading movie")
 
         # Submit the media to Shotgun Create.
         self.submit(output_path, sg_task, sg_publishes)

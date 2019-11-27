@@ -46,19 +46,7 @@ class RenderMedia(HookBaseClass):
         """
 
         if not output_path:
-            name = name or ""
-
-            if version:
-                suffix = "_v" + version + ".jpg"
-            else:
-                suffix = ".jpg"
-
-            temp_file = tempfile.NamedTemporaryFile(
-                delete=False, prefix=name, suffix=suffix
-            )
-
-            temp_file.close
-            output_path = temp_file.name
+            output_path = self._get_temp_media_path(name, version, ".jpg")
 
         self.logger.info("Saving as a JPG to: %s " % output_path)
 

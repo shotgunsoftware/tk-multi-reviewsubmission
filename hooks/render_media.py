@@ -44,30 +44,7 @@ class RenderMedia(HookBaseClass):
         :returns:               Location of the rendered media
         :rtype:                 str
         """
-
-        if not output_path:
-            name = name or ""
-
-            if version:
-                suffix = "_v" + version + ".jpg"
-            else:
-                suffix = ".jpg"
-
-            temp_file = tempfile.NamedTemporaryFile(
-                delete=False, prefix=name + "_", suffix=suffix
-            )
-
-            temp_file.close
-            output_path = temp_file.name
-
-        self.logger.info("Saving as a JPG to: %s " % output_path)
-
-        engine = sgtk.platform.current_engine()
-        output_path = engine.export_as_jpeg(None, output_path)
-
-        self.logger.info("JPG written")
-
-        return output_path
+        raise NotImplementedError()
 
     def pre_render(
         self,
@@ -131,13 +108,24 @@ class RenderMedia(HookBaseClass):
 
         pass
 
-    def _get_temp_media_path(self, name, version):
+    def _get_temp_media_path(self, name, version, extension):
+        """
+        Build a temporary path to put the rendered media.
+
+        :param name:            Name of the media being rendered
+        :param version:         Version number of the media being rendered
+        :param extension:       Extension of the media being rendered
+
+        :returns:               Temporary path to put the rendered version
+        :rtype:                 str
+        """
+
         name = name or ""
 
         if version:
-            suffix = "_v" + version + ".mov"
+            suffix = "_v" + version + extension
         else:
-            suffix = ".mov"
+            suffix = extension
 
         with tempfile.NamedTemporaryFile(
             delete=False, prefix=name + "_", suffix=suffix
