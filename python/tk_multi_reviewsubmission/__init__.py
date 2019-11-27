@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 201 Shotgun Software Inc.
 #
 # CONFIDENTIAL AND PROPRIETARY
 #
@@ -8,5 +8,40 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-from .renderer import Renderer
-from .submitter import Submitter
+from .actions import Actions
+
+
+def send_for_review():
+    action = Actions()
+    action.render_and_submit_version()
+
+
+def render_and_submit_version(
+    template,
+    fields,
+    first_frame,
+    last_frame,
+    sg_publishes,
+    sg_task,
+    comment,
+    thumbnail_path,
+    progress_cb,
+    color_space,
+    *args,
+    **kwargs
+):
+    action = Actions()
+    action.render_and_submit_version(
+        template,
+        fields,
+        first_frame,
+        last_frame,
+        sg_publishes,
+        sg_task,
+        comment,
+        thumbnail_path,
+        progress_cb,
+        color_space,
+        *args,
+        **kwargs
+    )

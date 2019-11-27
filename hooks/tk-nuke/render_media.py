@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2019 Shotgun Software Inc.
 #
 # CONFIDENTIAL AND PROPRIETARY
 #
@@ -13,8 +13,10 @@ import os
 import sys
 import nuke
 
+HookBaseClass = sgtk.get_hook_baseclass()
 
-class Renderer(object):
+
+class RenderMedia(HookBaseClass):
     def __init__(self):
         """
         Construction
@@ -43,9 +45,9 @@ class Renderer(object):
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")
 
-    def render_movie_in_nuke(
+    def render(
         self,
-        path,
+        input_path,
         output_path,
         width,
         height,
@@ -56,17 +58,20 @@ class Renderer(object):
         color_space,
     ):
         """
-        Use Nuke to render a movie. This assumes we're running _inside_ Nuke.
+        Use Nuke to render a movie.
 
-        :param path:        Path to the input frames for the movie
-        :param output_path: Path to the output movie that will be rendered
-        :param width:       Width of the output movie
-        :param height:      Height of the output movie
-        :param first_frame: Start frame for the output movie
-        :param last_frame:  End frame for the output movie
-        :param version:     Version number to use for the output movie slate and burn-in
-        :param name:        Name to use in the slate for the output movie
-        :param color_space: Colorspace of the input frames
+        :param input_path:      Path to the input frames for the movie
+        :param output_path:     Path to the output movie that will be rendered
+        :param width:           Width of the output movie
+        :param height:          Height of the output movie
+        :param first_frame:     The first frame of the sequence of frames.
+        :param last_frame:      The last frame of the sequence of frames.
+        :param version:         Version number to use for the output movie slate and burn-in
+        :param name:            Name to use in the slate for the output movie
+        :param color_space:     Colorspace of the input frames
+
+        :returns:               Location of the rendered media
+        :rtype:                 str
         """
         output_node = None
         ctx = self.__app.context
@@ -78,7 +83,7 @@ class Renderer(object):
         group.begin()
         try:
             # create read node
-            read = nuke.nodes.Read(name="source", file=path.replace(os.sep, "/"))
+            read = nuke.nodes.Read(name="source", file=input_path.replace(os.sep, "/"))
             read["on_error"].setValue("black")
             read["first"].setValue(first_frame)
             read["last"].setValue(last_frame)
@@ -154,6 +159,8 @@ class Renderer(object):
         # Cleanup after ourselves
         nuke.delete(group)
 
+        return output_path
+
     def __create_scale_node(self, width, height):
         """
         Create the Nuke scale node to resize the content.
@@ -173,9 +180,7 @@ class Renderer(object):
         Create the Nuke output node for the movie.
         """
         # get the Write node settings we'll use for generating the Quicktime
-        wn_settings = self.__app.execute_hook_method(
-            "codec_settings_hook", "get_quicktime_settings"
-        )
+        wn_settings = self.__get_quicktime_settings()
 
         node = nuke.nodes.Write(file_type=wn_settings.get("file_type"))
 
@@ -200,3 +205,34 @@ class Renderer(object):
             node["file"].setValue(path.replace(os.sep, "/"))
 
         return node
+
+    def __get_quicktime_settings(self, **kwargs):
+        """
+        Allows modifying default codec settings for Quicktime generation.
+        Returns a dictionary of settings to be used for the Write Node that generates
+        the Quicktime in Nuke.
+        """
+        settings = {}
+        if sys.platform in ["darwin", "win32"]:
+            settings["file_type"] = "mov"
+            if nuke.NUKE_VERSION_MAJOR >= 9:
+                # Nuke 9.0v1 changed the codec knob name to meta_codec and added an encoder knob
+                # (which defaults to the new mov64 encoder/decoder).
+                settings["meta_codec"] = "jpeg"
+                settings["mov64_quality_max"] = "3"
+            else:
+                settings["codec"] = "jpeg"
+
+        elif sys.platform == "linux2":
+            if nuke.NUKE_VERSION_MAJOR >= 9:
+                # Nuke 9.0v1 removed ffmpeg and replaced it with the mov64 writer
+                # http://help.thefoundry.co.uk/nuke/9.0/#appendices/appendixc/supported_file_formats.html
+                settings["file_type"] = "mov64"
+                settings["mov64_codec"] = "jpeg"
+                settings["mov64_quality_max"] = "3"
+            else:
+                # the 'codec' knob name was changed to 'format' in Nuke 7.0
+                settings["file_type"] = "ffmpeg"
+                settings["format"] = "MOV format (mov)"
+
+        return settings
