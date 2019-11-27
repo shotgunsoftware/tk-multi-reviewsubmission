@@ -58,7 +58,7 @@ class Actions(object):
         # Wrap the method so we don't have to worry about process_cb being None
         def dispatch_progress(*args):
             if progress_cb:
-                process_cb(*args)
+                progress_cb(*args)
 
         dispatch_progress(20, "Building the rendering options dictionary")
 
