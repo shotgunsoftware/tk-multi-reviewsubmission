@@ -24,6 +24,13 @@ class Actions(object):
 
         # Ensure that Shotgun Create is installed on the workstation.
         if not self.__create_client_module.is_create_installed():
+
+            # If Shotgun Create is not installed, prompt the download page to the user
+            self.__create_client_module.open_shotgun_create_download_page(
+                self.__app.sgtk.shotgun
+            )
+
+            # And kill the initialization of the actions object
             raise RuntimeError("Shotgun Create is not installed")
 
     def render_and_submit_version(
