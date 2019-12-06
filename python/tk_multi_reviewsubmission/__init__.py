@@ -10,10 +10,17 @@
 
 from .actions import Actions
 
+import sgtk
+
+logger = sgtk.platform.get_logger(__name__)
+
 
 def send_for_review():
-    action = Actions()
-    action.render_and_submit_version()
+    try:
+        action = Actions()
+        action.render_and_submit_version()
+    except RuntimeError as e:
+        logger.error(str(e))
 
 
 def render_and_submit_version(
@@ -30,18 +37,21 @@ def render_and_submit_version(
     *args,
     **kwargs
 ):
-    action = Actions()
-    action.render_and_submit_version(
-        template,
-        fields,
-        first_frame,
-        last_frame,
-        sg_publishes,
-        sg_task,
-        comment,
-        thumbnail_path,
-        progress_cb,
-        color_space,
-        *args,
-        **kwargs
-    )
+    try:
+        action = Actions()
+        action.render_and_submit_version(
+            template,
+            fields,
+            first_frame,
+            last_frame,
+            sg_publishes,
+            sg_task,
+            comment,
+            thumbnail_path,
+            progress_cb,
+            color_space,
+            *args,
+            **kwargs
+        )
+    except Exception as e:
+        logger.error(str(e))
