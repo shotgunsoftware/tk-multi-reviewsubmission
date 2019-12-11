@@ -1,4 +1,4 @@
-# Copyright (c) 201 Shotgun Software Inc.
+# Copyright (c) 2019 Shotgun Software Inc.
 #
 # CONFIDENTIAL AND PROPRIETARY
 #
