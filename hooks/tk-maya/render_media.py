@@ -11,6 +11,7 @@
 
 import sgtk
 import maya
+import os
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -55,7 +56,7 @@ class RenderMedia(HookBaseClass):
         }
 
         if name == "Unnamed":
-            current_file_path = maya.cmds.file(query=True, sn=true)
+            current_file_path = maya.cmds.file(query=True, sn=True)
 
             if current_file_path:
                 name = os.path.basename(current_file_path)
