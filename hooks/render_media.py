@@ -128,6 +128,6 @@ class RenderMedia(HookBaseClass):
             suffix = extension
 
         with tempfile.NamedTemporaryFile(
-            delete=False, prefix=name + "_", suffix=suffix
+            delete=False, prefix=name + ".", suffix=suffix
         ) as temp_file:
             return temp_file.name

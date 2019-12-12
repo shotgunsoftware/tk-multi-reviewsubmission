@@ -11,6 +11,7 @@
 
 import sgtk
 import maya
+import os
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -45,13 +46,20 @@ class RenderMedia(HookBaseClass):
         :rtype:                 str
         """
         # For more informations about the playblast API,
-        # http://download.autodesk.com/us/maya/2011help/CommandsPython/playblast.html
+        # https://help.autodesk.com/view/MAYAUL/2020/ENU/?guid=__CommandsPython_playblast_html
 
         playblast_args = {
             "viewer": False,  # Specify whether a viewer should be launched for the playblast.
             "forceOverwrite": True,  # Overwrite existing playblast files which may have the the same name as the one specified with the "-f" flag
             "format": "qt",  # The format of the output of this playblast.
+            "percent": 100,  # Percentage of current view size to use during blasting.
         }
+
+        if name == "Unnamed":
+            current_file_path = maya.cmds.file(query=True, sn=True)
+
+            if current_file_path:
+                name = os.path.basename(current_file_path)
 
         if not output_path:
             output_path = self._get_temp_media_path(name, version, ".mov")
