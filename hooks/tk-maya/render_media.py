@@ -49,7 +49,6 @@ class RenderMedia(HookBaseClass):
         # For more informations about the playblast API,
         # https://help.autodesk.com/view/MAYAUL/2020/ENU/?guid=__CommandsPython_playblast_html
 
-        is_windows = sys.platform == "win32"
 
         playblast_args = {
             "viewer": False,  # Specify whether a viewer should be launched for the playblast.
@@ -58,12 +57,7 @@ class RenderMedia(HookBaseClass):
             # The format of the output of this playblast.
         }
 
-        # The format of the output of this playblast.
-        # Rendering a .mov does not work out of the box on Windows.
-        # It requires to have QuickTime installed and this is not really supported...
-        # Since Shotgun Create also supports avi files, it's a safe move to render this type on Widows
-        playblast_args["format"] = "avi" if is_windows else "qt"
-        file_extension = ".avi" if is_windows else ".mov"
+        playblast_format, playblast_extension = self.get_playblast_format_param()
 
         if name == "Unnamed":
             current_file_path = maya.cmds.file(query=True, sn=True)
@@ -72,7 +66,7 @@ class RenderMedia(HookBaseClass):
                 name = os.path.basename(current_file_path)
 
         if not output_path:
-            output_path = self._get_temp_media_path(name, version, file_extension)
+            output_path = self._get_temp_media_path(name, version, playblast_extension)
 
         # The filename to use for the output of this playblast.
         playblast_args["filename"] = output_path
@@ -93,3 +87,21 @@ class RenderMedia(HookBaseClass):
         self.logger.info("Playblast written")
 
         return output_path
+
+    def get_playblast_format_param(self):
+        """
+        Build the playblast format related parameters.
+
+        WARNING:
+        Rendering a .mov does not work out of the box on Windows because it requires to have
+        QuickTime installed. Since Shotgun Create supports avi files, it's a safe move to render
+        this type on Windows so we can have an higher success rate on playblast.
+        This is not an issue on MacOS and on Linux.
+
+        :returns:               Tuple representing the playblast format and the playblast file extension
+        :rtype:                 (str, str)
+
+        """
+
+        is_windows = sys.platform == "win32"
+        return  ("avi", ".avi") if is_windows else ("qt", "mov")
