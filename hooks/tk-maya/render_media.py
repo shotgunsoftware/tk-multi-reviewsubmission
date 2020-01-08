@@ -104,4 +104,4 @@ class RenderMedia(HookBaseClass):
         """
 
         is_windows = sys.platform == "win32"
-        return ("avi", ".avi") if is_windows else ("qt", "mov")
+        return ("avi", ".avi") if is_windows else ("qt", ".mov")
