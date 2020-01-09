@@ -14,24 +14,19 @@ import copy
 
 class Actions(object):
     def __init__(self):
-        """
-        Construction
-        """
         self.__app = sgtk.platform.current_bundle()
         self.__create_client_module = sgtk.platform.import_framework(
             "tk-framework-desktopclient", "create_client"
         )
 
-        # Ensure that Shotgun Create is installed on the workstation.
-        if not self.__create_client_module.is_create_installed():
+        can_submit = self.__app.execute_hook_method(
+            key="submitter_hook", method_name="can_submit", base_class=None,
+        )
 
-            # If Shotgun Create is not installed, prompt the download page to the user
-            self.__create_client_module.open_shotgun_create_download_page(
-                self.__app.sgtk.shotgun
+        if not can_submit:
+            raise RuntimeError(
+                "Unable to submit a version to Shotgun given the current configuration"
             )
-
-            # And kill the initialization of the actions object
-            raise RuntimeError("Shotgun Create is not installed")
 
     def render_and_submit_version(
         self,
@@ -150,8 +145,23 @@ class Actions(object):
 
         dispatch_progress(50, "Creating Shotgun Version and uploading movie")
 
-        # Submit the media to Shotgun Create.
-        self.submit(output_path, sg_task, sg_publishes)
+        submit_hook_args = {
+            "path_to_frames": input_path,
+            "path_to_movie": output_path,
+            "thumbnail_path": thumbnail_path,
+            "sg_publishes": sg_publishes,
+            "sg_task": sg_task,
+            "description": comment,
+            "first_frame": first_frame,
+            "last_frame": last_frame,
+        }
+
+        self.__app.execute_hook_method(
+            key="submitter_hook",
+            method_name="submit_version",
+            base_class=None,
+            **submit_hook_args
+        )
 
         # Log metrics for this app's usage
         try:
@@ -159,32 +169,3 @@ class Actions(object):
         except Exception:
             # ingore any errors. ex: metrics logging not supported
             pass
-
-    def submit(self, path_to_media, sg_task, sg_publishes):
-        """
-        Submit the media to Shotgun Create as a version Draft.
-
-        :param path_to_media:   Draft media path
-        :param sg_task:         Task on which the Version should be linked
-        :param sg_publishes:    Publish files to link to the new Version
-        """
-
-        # Starts create in the right context if not already running.
-        self.__create_client_module.ensure_create_server_is_running(
-            self.__app.sgtk.shotgun
-        )
-
-        client = self.__create_client_module.CreateClient(self.__app.sgtk.shotgun)
-
-        if not sg_task:
-            sg_task = self.__app.context.task
-
-        args = dict()
-        args["task_id"] = sg_task["id"]
-        args["path"] = path_to_media
-        args["version_data"] = dict()
-
-        if sg_publishes:
-            args["version_data"]["published_files"] = sg_publishes
-
-        client.call_server_method("sgc_open_version_draft", args)
