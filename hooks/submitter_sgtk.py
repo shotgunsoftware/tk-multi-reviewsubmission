@@ -17,6 +17,10 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 
 class SubmitterSGTK(HookBaseClass):
+    """
+    This hook allow to submit a Version to Shotgun using Shotgun Toolkit.
+    """
+
     def __init__(self, *args, **kwargs):
         super(SubmitterSGTK, self).__init__(*args, **kwargs)
 
@@ -59,16 +63,16 @@ class SubmitterSGTK(HookBaseClass):
         last_frame,
     ):
         """
-        Create a version in Shotgun for this path and linked to this publish.
+        Create a version in Shotgun for a given path and linked to the specified publishes.
 
-        :param path_to_frames: Path to the frame representation.
-        :param path_to_movie: Path to the movie representation.
-        :param thumbnail_path: Path to the thumbnail representing.
-        :param sg_publishes: Published files that have to be linked to the version.
-        :param sg_task: Task that have to be linked to the version.
-        :param description: Description of the version.
-        :param first_frame: Version first frame.
-        :param last_frame: Version last frame.
+        :param str path_to_frames: Path to the frames.
+        :param str path_to_movie: Path to the movie.
+        :param str thumbnail_path: Path to the thumbnail representing the version.
+        :param list(dict) sg_publishes: Published files that have to be linked to the version.
+        :param dict sg_task: Task that have to be linked to the version.
+        :param str description: Description of the version.
+        :param int first_frame: Version first frame.
+        :param int last_frame: Version last frame.
 
         :returns:               Location of the rendered media
         :rtype:                 str
@@ -137,9 +141,9 @@ class SubmitterSGTK(HookBaseClass):
         """
         Upload the required files to Shotgun.
 
-        :param sg_version:      Version to which uploaded files should be linked.
-        :param output_path:     Media to upload to Shotgun.
-        :param thumbnail_path:  Thumbnail to upload to Shotgun.
+        :param dict sg_version:      Version to which uploaded files should be linked.
+        :param str output_path:     Media to upload to Shotgun.
+        :param str thumbnail_path:  Thumbnail to upload to Shotgun.
         """
         # Upload in a new thread and make our own event loop to wait for the
         # thread to finish.

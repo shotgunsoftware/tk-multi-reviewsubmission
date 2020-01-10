@@ -15,6 +15,10 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 
 class SubmitterCreate(HookBaseClass):
+    """
+    This hook allow to submit a Version to Shotgun using Shotgun Create.
+    """
+
     def __init__(self, *args, **kwargs):
         super(SubmitterCreate, self).__init__(*args, **kwargs)
 
@@ -57,16 +61,19 @@ class SubmitterCreate(HookBaseClass):
         last_frame,
     ):
         """
-        Create a version in Shotgun for this path and linked to this publish.
+        Create a version in Shotgun for a given path and linked to the specified publishes.
 
-        :param path_to_frames: Path to the frame representation.
-        :param path_to_movie: Path to the movie representation.
-        :param thumbnail_path: Path to the thumbnail representing. ( Unused )
-        :param sg_publishes: Published files that have to be linked to the version.
-        :param sg_task: Task that have to be linked to the version.
-        :param description: Description of the version.
-        :param first_frame: Version first frame ( Unused )
-        :param last_frame: Version last frame ( Unused )
+        :param str path_to_frames: Path to the frames.
+        :param str path_to_movie: Path to the movie.
+        :param str thumbnail_path: Path to the thumbnail representing the version. ( Unused )
+        :param list(dict) sg_publishes: Published files that have to be linked to the version.
+        :param dict sg_task: Task that have to be linked to the version.
+        :param str description: Description of the version.
+        :param int first_frame: Version first frame ( Unused )
+        :param int last_frame: Version last frame ( Unused )
+
+        Note: Shotgun Create will create the thumbnail for the movie passed in and
+        will inspect the media to get the first and last frame, so these parameters are ignored.
 
         :returns:               Location of the rendered media
         :rtype:                 str

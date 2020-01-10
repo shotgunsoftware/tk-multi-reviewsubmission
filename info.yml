@@ -86,7 +86,7 @@ configuration:
     submitter_hook:
         type: hook
         description: Implements how media get sent to Shotgun
-        default_value: '{self}/submitter_create.py'
+        default_value: '{self}/submitter_sgtk.py'
 
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:

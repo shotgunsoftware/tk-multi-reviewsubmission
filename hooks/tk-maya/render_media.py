@@ -18,6 +18,10 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 
 class RenderMedia(HookBaseClass):
+    """
+    RenderMedia hook implementation for the tk-maya engine.
+    """
+
     def render(
         self,
         input_path,
@@ -33,22 +37,21 @@ class RenderMedia(HookBaseClass):
         """
         Render the media using the Maya Playblast API
 
-        :param input_path:      Path to the input frames for the movie      (Unused)
-        :param output_path:     Path to the output movie that will be rendered
-        :param width:           Width of the output movie
-        :param height:          Height of the output movie
-        :param first_frame:     The first frame of the sequence of frames.  (Unused)
-        :param last_frame:      The last frame of the sequence of frames.   (Unused)
-        :param version:         Version number to use for the output movie slate and burn-in
-        :param name:            Name to use in the slate for the output movie
-        :param color_space:     Colorspace of the input frames              (Unused)
+        :param str input_path:      Path to the input frames for the movie      (Unused)
+        :param str output_path:     Path to the output movie that will be rendered
+        :param int width:           Width of the output movie
+        :param int height:          Height of the output movie
+        :param int first_frame:     The first frame of the sequence of frames.  (Unused)
+        :param int last_frame:      The last frame of the sequence of frames.   (Unused)
+        :param int version:         Version number to use for the output movie slate and burn-in
+        :param str name:            Name to use in the slate for the output movie
+        :param str color_space:     Colorspace of the input frames              (Unused)
 
         :returns:               Location of the rendered media
         :rtype:                 str
         """
         # For more informations about the playblast API,
         # https://help.autodesk.com/view/MAYAUL/2020/ENU/?guid=__CommandsPython_playblast_html
-
 
         playblast_args = {
             "viewer": False,  # Specify whether a viewer should be launched for the playblast.
