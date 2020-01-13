@@ -16,6 +16,10 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 
 class RenderMedia(HookBaseClass):
+    """
+    Base class of the RenderMedia hook. It implements the hook interface and helper methods.
+    """
+
     def render(
         self,
         input_path,
@@ -31,15 +35,15 @@ class RenderMedia(HookBaseClass):
         """
         Render the media
 
-        :param path:            Path to the input frames for the movie      (Unused)
-        :param output_path:     Path to the output movie that will be rendered
-        :param width:           Width of the output movie                   (Unused)
-        :param height:          Height of the output movie                  (Unused)
-        :param first_frame:     The first frame of the sequence of frames.  (Unused)
-        :param last_frame:      The last frame of the sequence of frames.   (Unused)
-        :param version:         Version number to use for the output movie slate and burn-in
-        :param name:            Name to use in the slate for the output movie
-        :param color_space:     Colorspace of the input frames              (Unused)
+        :param str path:            Path to the input frames for the movie      (Unused)
+        :param str output_path:     Path to the output movie that will be rendered
+        :param int width:           Width of the output movie                   (Unused)
+        :param int height:          Height of the output movie                  (Unused)
+        :param int first_frame:     The first frame of the sequence of frames.  (Unused)
+        :param int last_frame:      The last frame of the sequence of frames.   (Unused)
+        :param int version:         Version number to use for the output movie slate and burn-in
+        :param str name:            Name to use in the slate for the output movie
+        :param str color_space:     Colorspace of the input frames              (Unused)
 
         :returns:               Location of the rendered media
         :rtype:                 str
@@ -61,15 +65,15 @@ class RenderMedia(HookBaseClass):
         """
         Callback executed before the media rendering
 
-        :param path:            Path to the input frames for the movie
-        :param output_path:     Path to the output movie that will be rendered
-        :param width:           Width of the output movie
-        :param height:          Height of the output movie
-        :param first_frame:     The first frame of the sequence of frames.
-        :param last_frame:      The last frame of the sequence of frames.
-        :param version:         Version number to use for the output movie slate and burn-in
-        :param name:            Name to use in the slate for the output movie
-        :param color_space:     Colorspace of the input frames
+        :param str path:            Path to the input frames for the movie
+        :param str output_path:     Path to the output movie that will be rendered
+        :param int width:           Width of the output movie
+        :param int height:          Height of the output movie
+        :param int first_frame:     The first frame of the sequence of frames.
+        :param int last_frame:      The last frame of the sequence of frames.
+        :param int version:         Version number to use for the output movie slate and burn-in
+        :param str name:            Name to use in the slate for the output movie
+        :param str color_space:     Colorspace of the input frames
 
         :returns:               Location of the rendered media
         :rtype:                 str
@@ -92,15 +96,15 @@ class RenderMedia(HookBaseClass):
         """
         Callback executed after the media rendering
 
-        :param input_path:      Path to the input frames for the movie
-        :param output_path:     Path to the output movie that will be rendered
-        :param width:           Width of the output movie
-        :param height:          Height of the output movie
-        :param first_frame:     The first frame of the sequence of frames.
-        :param last_frame:      The last frame of the sequence of frames.
-        :param version:         Version number to use for the output movie slate and burn-in
-        :param name:            Name to use in the slate for the output movie
-        :param color_space:     Colorspace of the input frames
+        :param str input_path:      Path to the input frames for the movie
+        :param str output_path:     Path to the output movie that will be rendered
+        :param int width:           Width of the output movie
+        :param int height:          Height of the output movie
+        :param int first_frame:     The first frame of the sequence of frames.
+        :param int last_frame:      The last frame of the sequence of frames.
+        :param int version:         Version number to use for the output movie slate and burn-in
+        :param str name:            Name to use in the slate for the output movie
+        :param str color_space:     Colorspace of the input frames
 
         :returns:               Location of the rendered media
         :rtype:                 str
@@ -112,9 +116,9 @@ class RenderMedia(HookBaseClass):
         """
         Build a temporary path to put the rendered media.
 
-        :param name:            Name of the media being rendered
-        :param version:         Version number of the media being rendered
-        :param extension:       Extension of the media being rendered
+        :param str name:            Name of the media being rendered
+        :param str version:         Version number of the media being rendered
+        :param str extension:       Extension of the media being rendered
 
         :returns:               Temporary path to put the rendered version
         :rtype:                 str

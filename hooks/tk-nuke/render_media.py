@@ -17,10 +17,11 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 
 class RenderMedia(HookBaseClass):
+    """
+    RenderMedia hook implementation for the tk-nuke engine.
+    """
+
     def __init__(self):
-        """
-        Construction
-        """
         self.__app = sgtk.platform.current_bundle()
 
         self._burnin_nk = os.path.join(
@@ -60,15 +61,15 @@ class RenderMedia(HookBaseClass):
         """
         Use Nuke to render a movie.
 
-        :param input_path:      Path to the input frames for the movie
-        :param output_path:     Path to the output movie that will be rendered
-        :param width:           Width of the output movie
-        :param height:          Height of the output movie
-        :param first_frame:     The first frame of the sequence of frames.
-        :param last_frame:      The last frame of the sequence of frames.
-        :param version:         Version number to use for the output movie slate and burn-in
-        :param name:            Name to use in the slate for the output movie
-        :param color_space:     Colorspace of the input frames
+        :param str input_path:      Path to the input frames for the movie
+        :param str output_path:     Path to the output movie that will be rendered
+        :param int width:           Width of the output movie
+        :param int height:          Height of the output movie
+        :param int first_frame:     The first frame of the sequence of frames.
+        :param int last_frame:      The last frame of the sequence of frames.
+        :param str version:         Version number to use for the output movie slate and burn-in
+        :param str name:            Name to use in the slate for the output movie
+        :param str color_space:     Colorspace of the input frames
 
         :returns:               Location of the rendered media
         :rtype:                 str
@@ -164,6 +165,12 @@ class RenderMedia(HookBaseClass):
     def __create_scale_node(self, width, height):
         """
         Create the Nuke scale node to resize the content.
+
+        :param int width:           Width of the output movie
+        :param int height:          Height of the output movie
+
+        :returns:               Pre-configured Reformat node
+        :rtype:                 Nuke node
         """
         scale = nuke.nodes.Reformat()
         scale["type"].setValue("to box")
@@ -178,6 +185,11 @@ class RenderMedia(HookBaseClass):
     def __create_output_node(self, path):
         """
         Create the Nuke output node for the movie.
+
+        :param str path:           Path of the output movie
+
+        :returns:               Pre-configured Write node
+        :rtype:                 Nuke node
         """
         # get the Write node settings we'll use for generating the Quicktime
         wn_settings = self.__get_quicktime_settings()
@@ -211,6 +223,9 @@ class RenderMedia(HookBaseClass):
         Allows modifying default codec settings for Quicktime generation.
         Returns a dictionary of settings to be used for the Write Node that generates
         the Quicktime in Nuke.
+
+        :returns:               Codec settings
+        :rtype:                 dict
         """
         settings = {}
         if sys.platform in ["darwin", "win32"]:

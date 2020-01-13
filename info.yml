@@ -17,6 +17,22 @@ configuration:
         default_value: Send for review
         description: Specify the name that should be used in menus and the main
 
+    upload_to_shotgun:
+        type: bool
+        default_value: true
+        description: Should the movie being created be uploaded to Shotgun
+                     as a version or just kept on disk? Disabling this as well
+                     as the store_on_disk option effectively disables the whole
+                     tool.
+
+    store_on_disk:
+        type: bool
+        default_value: true
+        description: Should the movie being created be kept on disk? Disabling
+                     this as well as the upload_to_shotgun option will
+                     effectively disable the whole tool.
+
+
     movie_path_template:
         allows_empty: True
         type: template
@@ -64,8 +80,13 @@ configuration:
 
     render_media_hook:
         type: hook
-        description: TODO!!!
+        description: Implements how media get generated while this app is running.
         default_value: '{self}/render_media.py:{self}/{engine_name}/render_media.py'
+
+    submitter_hook:
+        type: hook
+        description: Implements how media get sent to Shotgun
+        default_value: '{self}/submitter_sgtk.py'
 
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
