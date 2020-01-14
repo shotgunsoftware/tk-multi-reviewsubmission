@@ -74,8 +74,8 @@ class SubmitterSGTK(HookBaseClass):
         :param int first_frame: Version first frame.
         :param int last_frame: Version last frame.
 
-        :returns:               Location of the rendered media
-        :rtype:                 str
+        :returns:               The Version Shotgun entity dictionary that was created.
+        :rtype:                 dict
         """
 
         # get current shotgun user

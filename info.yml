@@ -14,7 +14,7 @@
 configuration:
     display_name:
         type: str
-        default_value: Send for review
+        default_value: ""
         description: Specify the name that should be used in menus and the main
 
     upload_to_shotgun:
@@ -100,9 +100,7 @@ requires_shotgun_version:
 requires_core_version: "v0.14.0"
 requires_engine_version:
 
-# For now this app is only compatible with Nuke.
 supported_engines:
 
 # the frameworks required to run this app
 frameworks:
-    - {"name": "tk-framework-desktopclient", "version": "v0.x.x"}

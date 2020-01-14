@@ -21,8 +21,10 @@ class RenderMedia(HookBaseClass):
     RenderMedia hook implementation for the tk-nuke engine.
     """
 
-    def __init__(self):
-        self.__app = sgtk.platform.current_bundle()
+    def __init__(self, *args, **kwargs):
+        super(RenderMedia, self).__init__(*args, **kwargs)
+
+        self.__app = self.parent
 
         self._burnin_nk = os.path.join(
             self.__app.disk_location, "resources", "burnin.nk"
