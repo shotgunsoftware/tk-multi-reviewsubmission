@@ -43,7 +43,7 @@ class SubmitterSGTK(HookBaseClass):
         """
 
         if not self._upload_to_shotgun and not self._store_on_disk:
-            self.log_warning(
+            self.__app.log_warning(
                 "App is not configured to store images on disk nor upload to shotgun!"
             )
 
