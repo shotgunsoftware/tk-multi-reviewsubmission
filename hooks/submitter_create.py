@@ -10,6 +10,7 @@
 
 
 import sgtk
+from sgtk.platform.qt import QtGui
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -40,7 +41,10 @@ class SubmitterCreate(HookBaseClass):
         """
 
         if not self.__create_client_module.is_create_installed():
-            self.log_warning("Shotgun Create is not installed.")
+            QtGui.QMessageBox.warning(
+                None, "Cannot submit to Shotgun", "Shotgun Create is not installed!",
+            )
+
             self.__create_client_module.open_shotgun_create_download_page(
                 self.__app.sgtk.shotgun
             )

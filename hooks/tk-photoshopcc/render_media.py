@@ -10,6 +10,7 @@
 
 
 import sgtk
+from sgtk.platform.qt import QtGui
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -51,6 +52,10 @@ class RenderMedia(HookBaseClass):
         engine = sgtk.platform.current_engine()
 
         if not engine.adobe.get_active_document():
+            QtGui.QMessageBox.warning(
+                None, "Unable to render", "No active document found.",
+            )
+
             raise RuntimeError("No active document found.")
 
     def render(
