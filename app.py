@@ -35,6 +35,8 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
 
         display_name = self.get_setting("display_name")
 
+        # Only register the command to the engine if the display name is explicitely added to the config.
+        # There's cases where someone would want to have this app in his environment without the menu item.
         if display_name:
             menu_caption = "%s..." % display_name
             menu_options = {
