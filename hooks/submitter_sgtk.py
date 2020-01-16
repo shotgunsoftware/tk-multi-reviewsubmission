@@ -10,8 +10,9 @@
 
 
 import sgtk
+from sgtk.platform.qt import QtCore, QtGui
+
 import os
-from sgtk.platform.qt import QtCore
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -29,11 +30,6 @@ class SubmitterSGTK(HookBaseClass):
         self._upload_to_shotgun = self.__app.get_setting("upload_to_shotgun")
         self._store_on_disk = self.__app.get_setting("store_on_disk")
 
-        if not self._upload_to_shotgun and not self._store_on_disk:
-            self.__app.log_warning(
-                "App is not configured to store images on disk nor upload to shotgun!"
-            )
-
     def can_submit(self):
         """
         Checks if it's possible to submit versions given the current context/environment.
@@ -43,10 +39,11 @@ class SubmitterSGTK(HookBaseClass):
         """
 
         if not self._upload_to_shotgun and not self._store_on_disk:
-            self.log_warning(
-                "App is not configured to store images on disk nor upload to shotgun!"
+            QtGui.QMessageBox.warning(
+                None,
+                "Cannot submit to Shotgun",
+                "Application is not configured to store images on disk or upload to shotgun!",
             )
-
             return False
 
         return True
