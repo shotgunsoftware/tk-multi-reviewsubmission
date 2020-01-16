@@ -88,26 +88,26 @@ class RenderMedia(HookBaseClass):
 
         files = []
         for f in os.listdir(output_folder):
-            try:
-                f_path = os.path.join(output_folder, f)
-                if not f.startswith(output_file) or not os.path.isfile(f_path):
-                    continue
 
+            f_path = os.path.join(output_folder, f)
+            if not f.startswith(output_file) or not os.path.isfile(f_path):
+                continue
+
+            try:
                 # This method raise OSError if the file does not exist or is somehow inaccessible.
                 m_time = os.path.getmtime(f_path)
-
+            except OSError:
+                continue
+            else:
                 # Insert with a negative access time so the first elment in the list is the most recent file
                 heapq.heappush(files, (-m_time, f))
-            except OSError:
-                pass
 
-        while files:
+        if files:
             f = heapq.heappop(files)[1]
 
-            if f.startswith(output_file):
-                output_path = os.path.join(output_folder, f)
-                self.logger.info("Playblast written to %s" % output_path)
-                return output_path
+            output_path = os.path.join(output_folder, f)
+            self.logger.info("Playblast written to %s" % output_path)
+            return output_path
 
         raise RuntimeError(
             "Something went wrong with the playblast. Unable to find it on disk."
