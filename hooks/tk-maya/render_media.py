@@ -79,7 +79,7 @@ class RenderMedia(HookBaseClass):
             self.logger.info("Playblast written to %s" % output_path)
             return output_path
 
-        # Now, we did a playblast the the file is not on disk?
+        # Now, we did a playblast and the file is not on disk
         # What's happening is that if you render a movie, Maya append the movie name to the file name
         # and if you render a file sequence, Maya append the sequence number and the extension to the file.
         # Now we need to find the file on disk given the prefix we provided to the playblast command.
