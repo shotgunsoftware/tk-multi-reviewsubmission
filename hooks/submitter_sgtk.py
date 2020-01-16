@@ -42,7 +42,7 @@ class SubmitterSGTK(HookBaseClass):
             QtGui.QMessageBox.warning(
                 None,
                 "Cannot submit to Shotgun",
-                "App is not configured to store images on disk nor upload to shotgun!",
+                "Application is not configured to store images on disk or upload to shotgun!",
             )
             return False
 
