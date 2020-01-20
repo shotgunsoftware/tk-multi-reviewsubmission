@@ -113,5 +113,5 @@ class SubmitterCreate(HookBaseClass):
 
         client.call_server_method("sgc_open_version_draft", version_draft_args)
 
-        # Beause of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
+        # Because of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
         return None
