@@ -10,7 +10,7 @@
 
 
 import sgtk
-from sgtk.platform.qt import QtGui
+from sgtk.platform.qt import QtCore, QtGui
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -41,9 +41,16 @@ class SubmitterCreate(HookBaseClass):
         """
 
         if not self.__create_client_module.is_create_installed():
-            QtGui.QMessageBox.warning(
-                None, "Cannot submit to Shotgun", "Shotgun Create is not installed!",
-            )
+
+            QtGui.QMessageBox(
+                QtGui.QMessageBox.Warning,
+                "Cannot submit to Shotgun",
+                "Shotgun Create is not installed!",
+                flags=QtCore.Qt.Dialog
+                | QtCore.Qt.MSWindowsFixedSizeDialogHint
+                | QtCore.Qt.WindowStaysOnTopHint
+                | QtCore.Qt.X11BypassWindowManagerHint,
+            ).exec_()
 
             self.__create_client_module.open_shotgun_create_download_page(
                 self.__app.sgtk.shotgun
