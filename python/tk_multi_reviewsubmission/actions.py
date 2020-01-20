@@ -15,9 +15,6 @@ import copy
 class Actions(object):
     def __init__(self):
         self.__app = sgtk.platform.current_bundle()
-        self.__create_client_module = sgtk.platform.import_framework(
-            "tk-framework-desktopclient", "create_client"
-        )
 
         can_submit = self.__app.execute_hook_method(
             key="submitter_hook", method_name="can_submit", base_class=None,
@@ -55,6 +52,9 @@ class Actions(object):
                                 being uploaded to Shotgun (this is set in the config)
         :param progress_cb:     A callback to report progress with.
         :param color_space:     The colorspace of the rendered frames
+
+        :returns:               The Version Shotgun entity dictionary that was created.
+        :rtype:                 dict
         """
 
         # Wrap the method so we don't have to worry about process_cb being None
@@ -156,7 +156,7 @@ class Actions(object):
             "last_frame": last_frame,
         }
 
-        self.__app.execute_hook_method(
+        version = self.__app.execute_hook_method(
             key="submitter_hook",
             method_name="submit_version",
             base_class=None,
@@ -169,3 +169,5 @@ class Actions(object):
         except Exception:
             # ingore any errors. ex: metrics logging not supported
             pass
+
+        return version

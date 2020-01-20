@@ -79,8 +79,10 @@ class SubmitterCreate(HookBaseClass):
         Note: Shotgun Create will create the thumbnail for the movie passed in and
         will inspect the media to get the first and last frame, so these parameters are ignored.
 
-        :returns:               Location of the rendered media
-        :rtype:                 str
+        :returns:               The Version Shotgun entity dictionary that was created.
+        :rtype:                 dict
+
+        Beause of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
         """
 
         path_to_media = path_to_movie or path_to_frames
@@ -110,3 +112,6 @@ class SubmitterCreate(HookBaseClass):
             version_draft_args["version_data"]["description"] = description
 
         client.call_server_method("sgc_open_version_draft", version_draft_args)
+
+        # Because of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
+        return None

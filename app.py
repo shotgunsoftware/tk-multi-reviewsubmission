@@ -35,19 +35,24 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
 
         display_name = self.get_setting("display_name")
 
-        menu_caption = "%s..." % display_name
-        menu_options = {
-            "short_name": "send_for_review",
-            "description": "Send a version for review using Shotgun Create",
-            # dark themed icon for engines that recognize this format
-            "icons": {
-                "dark": {"png": os.path.join(self.disk_location, "icon_256_dark.png")}
-            },
-        }
+        # Only register the command to the engine if the display name is explicitely added to the config.
+        # There's cases where someone would want to have this app in his environment without the menu item.
+        if display_name:
+            menu_caption = "%s..." % display_name
+            menu_options = {
+                "short_name": "send_for_review",
+                "description": "Send a version for review using Shotgun Create",
+                # dark themed icon for engines that recognize this format
+                "icons": {
+                    "dark": {
+                        "png": os.path.join(self.disk_location, "icon_256_dark.png")
+                    }
+                },
+            }
 
-        self.engine.register_command(
-            menu_caption, lambda: app.send_for_review(), menu_options
-        )
+            self.engine.register_command(
+                menu_caption, lambda: app.send_for_review(), menu_options
+            )
 
     @property
     def context_change_allowed(self):
@@ -87,10 +92,11 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         :param color_space:     The colorspace of the rendered frames
 
         :returns:               The Version Shotgun entity dictionary that was created.
+        :rtype:                 dict
         """
         app = self.import_module("tk_multi_reviewsubmission")
 
-        app.render_and_submit_version(
+        return app.render_and_submit_version(
             template,
             fields,
             first_frame,
