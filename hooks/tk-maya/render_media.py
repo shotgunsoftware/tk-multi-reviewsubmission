@@ -241,7 +241,7 @@ class RenderMedia(HookBaseClass):
 
             # playblast_arg_list[18] is the flag telling if we should output depth with image in 'iff' format
             playblast_args["saveDepth"] = playblast_arg_list[18] == "1"
-        except IndexError as e:
+        except IndexError:
             # If we run this function on an old version of Maya, we might end with an IndexError being raised
             # because the amount of arguments returned by "performPlayblast". Since we want to gracefully handle
             # the cases where the argument list is shorter and we access all argument in an incremental way, it's
