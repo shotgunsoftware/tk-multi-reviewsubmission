@@ -154,92 +154,98 @@ class RenderMedia(HookBaseClass):
         playblast_arg_list = json.loads(playblast_arg_list_str)
 
         playblast_args = {"filename": output_path, "forceOverwrite": True}
+        try:
+            # We don't need playblast_arg_list[0] because we want to save the file on disk
+            # We don't need playblast_arg_list[1] because we provides the name of the movie
 
-        # We don't need playblast_arg_list[0] because we want to save the file on disk
-        # We don't need playblast_arg_list[1] because we provides the name of the movie
+            # We don't need playblast_arg_list[2] because we do not need to show the viewer
+            playblast_args["viewer"] = False
 
-        # We don't need playblast_arg_list[2] because we do not need to show the viewer
-        playblast_args["viewer"] = False
+            # playblast_arg_list[3] is the playblast format to use
+            playblast_args["format"] = playblast_arg_list[3]
 
-        # playblast_arg_list[3] is the playblast format to use
-        playblast_args["format"] = playblast_arg_list[3]
+            # playblast_arg_list[4] sets whether or not model view ornaments (e.g. the axis icon) should be displayed
+            playblast_args["showOrnaments"] = playblast_arg_list[4] == "1"
 
-        # playblast_arg_list[4] sets whether or not model view ornaments (e.g. the axis icon) should be displayed
-        playblast_args["showOrnaments"] = playblast_arg_list[4] == "1"
+            # playblast_arg_list[5] is the percentage of the current view to use during playblast
+            playblast_args["percent"] = round(float(playblast_arg_list[5]) * 100)
 
-        # playblast_arg_list[5] is the percentage of the current view to use during playblast
-        playblast_args["percent"] = round(float(playblast_arg_list[5]) * 100)
+            # playblast_arg_list[6] specify the compression to use for the movie file.
+            playblast_args["compression"] = playblast_arg_list[6]
 
-        # playblast_arg_list[6] specify the compression to use for the movie file.
-        playblast_args["compression"] = playblast_arg_list[6]
+            # playblast_arg_list[7] is the displaySource
+            # 1 : Use current view
+            # 2 : Use Render Globals
+            # 3 : Use values specified from option box
+            if playblast_arg_list[7] == "1":
+                pass  # Nothing to do, free pass !
+            elif playblast_arg_list[7] == "2":
+                # Grab the renderGlobals
+                render_globals = maya.mel.eval("ls -type renderGlobals")
+                if not render_globals:
+                    raise RuntimeError("Unable to find renderGlobals in Maya")
 
-        # playblast_arg_list[7] is the displaySource
-        # 1 : Use current view
-        # 2 : Use Render Globals
-        # 3 : Use values specified from option box
-        if playblast_arg_list[7] == "1":
-            pass  # Nothing to do, free pass !
-        elif playblast_arg_list[7] == "2":
-            # Grab the renderGlobals
-            render_globals = maya.mel.eval("ls -type renderGlobals")
-            if not render_globals:
-                raise RuntimeError("Unable to find renderGlobals in Maya")
+                # List all the connected nodes
+                connections = maya.mel.eval("listConnections %s" % render_globals[0])
+                if not connections:
+                    raise RuntimeError("Unable to list renderGlobals connections")
 
-            # List all the connected nodes
-            connections = maya.mel.eval("listConnections %s" % render_globals[0])
-            if not connections:
-                raise RuntimeError("Unable to list renderGlobals connections")
+                # Grab the resolution node from the connections
+                resolution_node = ""
+                for connection in connections:
+                    node_type = maya.mel.eval("nodeType %s" % connection)
+                    if node_type == "resolution":
+                        resolution_node = connection
+                        break
 
-            # Grab the resolution node from the connections
-            resolution_node = ""
-            for connection in connections:
-                node_type = maya.mel.eval("nodeType %s" % connection)
-                if node_type == "resolution":
-                    resolution_node = connection
-                    break
+                if not resolution_node:
+                    raise RuntimeError("Unable to find a resolution node")
 
-            if not resolution_node:
-                raise RuntimeError("Unable to find a resolution node")
+                # Collect the width and height from that node
+                playblast_args["width"] = int(
+                    maya.mel.eval("getAttr %s.width" % resolution_node)
+                )
+                playblast_args["height"] = int(
+                    maya.mel.eval("getAttr %s.height" % resolution_node)
+                )
+            else:
+                # Playblast setting is set to Custom, so let use the value provided
+                # playblast_arg_list[8] is the display width
+                playblast_args["width"] = int(playblast_arg_list[8])
 
-            # Collect the width and height from that node
-            playblast_args["width"] = int(
-                maya.mel.eval("getAttr %s.width" % resolution_node)
-            )
-            playblast_args["height"] = int(
-                maya.mel.eval("getAttr %s.height" % resolution_node)
-            )
-        else:
-            # Playblast setting is set to Custom, so let use the value provided
-            # playblast_arg_list[8] is the display width
-            playblast_args["width"] = int(playblast_arg_list[8])
+                # playblast_arg_list[9] is the display height
+                playblast_args["height"] = int(playblast_arg_list[9])
 
-            # playblast_arg_list[9] is the display height
-            playblast_args["height"] = int(playblast_arg_list[9])
+            # playblast_arg_list[10] is the flag telling to use the startTime and the endTime
+            if playblast_arg_list[10] == "1":
+                # playblast_arg_list[11] is the start time
+                playblast_args["startTime"] = float(playblast_arg_list[11])
 
-        # playblast_arg_list[10] is the flag telling to use the startTime and the endTime
-        if playblast_arg_list[10] == "1":
-            # playblast_arg_list[11] is the start time
-            playblast_args["startTime"] = float(playblast_arg_list[11])
+                # playblast_arg_list[12] is the end time
+                playblast_args["endTime"] = float(playblast_arg_list[12])
 
-            # playblast_arg_list[12] is the end time
-            playblast_args["endTime"] = float(playblast_arg_list[12])
+            # playblast_arg_list[13] is the flag telling if we need to clean the unnamed cached playblasts
+            playblast_args["clearCache"] = playblast_arg_list[13] == "1"
 
-        # playblast_arg_list[13] is the flag telling if we need to clean the unnamed cached playblasts
-        playblast_args["clearCache"] = playblast_arg_list[13] == "1"
+            # playblast_arg_list[14] is the flag telling if we should render offscreen
+            playblast_args["offScreen"] = playblast_arg_list[14] == "1"
 
-        # playblast_arg_list[14] is the flag telling if we should render offscreen
-        playblast_args["offScreen"] = playblast_arg_list[14] == "1"
+            # playblast_arg_list[15] is the number of zero to pad with
+            playblast_args["framePadding"] = int(playblast_arg_list[15])
 
-        # playblast_arg_list[15] is the number of zero to pad with
-        playblast_args["framePadding"] = int(playblast_arg_list[15])
+            # playblast_arg_list[16] is the flag telling to use the sequence time
+            playblast_args["sequenceTime"] = playblast_arg_list[16] == "1"
 
-        # playblast_arg_list[16] is the flag telling to use the sequence time
-        playblast_args["sequenceTime"] = playblast_arg_list[16] == "1"
+            # playblast_arg_list[17] is the quality setting
+            playblast_args["quality"] = int(playblast_arg_list[17])
 
-        # playblast_arg_list[17] is the quality setting
-        playblast_args["quality"] = int(playblast_arg_list[17])
-
-        # playblast_arg_list[18] is the flag telling if we should output depth with image in 'iff' format
-        playblast_args["saveDepth"] = playblast_arg_list[18] == "1"
-
-        return playblast_args
+            # playblast_arg_list[18] is the flag telling if we should output depth with image in 'iff' format
+            playblast_args["saveDepth"] = playblast_arg_list[18] == "1"
+        except IndexError as e:
+            # If we run this function on an old version of Maya, we might end with an IndexError being raised
+            # because the amount of arguments returned by "performPlayblast". Since we want to gracefully handle
+            # the cases where the argument list is shorter and we access all argument in an incremental way, it's
+            # ok to just catch the error and return the collected arguments.
+            pass
+        finally:
+            return playblast_args
