@@ -72,14 +72,6 @@ class Actions(object):
 
         dispatch_progress(10, "Preparing")
 
-        # Make sure we don't overwrite the caller's fields
-        fields = copy.copy(fields)
-
-        width = self.__app.get_setting("movie_width")
-        height = self.__app.get_setting("movie_height")
-        fields["width"] = width
-        fields["height"] = height
-
         if template:
             for key_name in [
                 key.name
@@ -92,7 +84,14 @@ class Actions(object):
             input_path = template.apply_fields(fields)
         else:
             input_path = None
-            output_path = None
+
+        # Make sure we don't overwrite the caller's fields
+        fields = copy.copy(fields)
+
+        width = self.__app.get_setting("movie_width")
+        height = self.__app.get_setting("movie_height")
+        fields["width"] = width
+        fields["height"] = height
 
         # Get an output path for the movie.
         output_path_template = self.__app.get_template("movie_path_template")
