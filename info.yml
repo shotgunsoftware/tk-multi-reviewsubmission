@@ -58,6 +58,11 @@ configuration:
         default_value: 1080
         description: The height of the rendered movie file
 
+    new_version_status:
+         type: str
+         default_value: rev
+         description: The value to use for a new Version's status.
+
     version_number_padding:
         type: int
         default_value: 3
