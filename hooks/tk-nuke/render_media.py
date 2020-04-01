@@ -13,6 +13,8 @@ import os
 import sys
 import nuke
 
+from tank_vendor import six
+
 HookBaseClass = sgtk.get_hook_baseclass()
 
 
@@ -43,7 +45,7 @@ class RenderMedia(HookBaseClass):
             self._logo = ""
 
         # now transform paths to be forward slashes, otherwise it wont work on windows.
-        if sys.platform == "win32":
+        if sgtk.util.is_windows():
             self._font = self._font.replace(os.sep, "/")
             self._logo = self._logo.replace(os.sep, "/")
             self._burnin_nk = self._burnin_nk.replace(os.sep, "/")
@@ -200,7 +202,7 @@ class RenderMedia(HookBaseClass):
 
         # apply any additional knob settings provided by the hook. Now that the knob has been
         # created, we can be sure specific file_type settings will be valid.
-        for knob_name, knob_value in wn_settings.iteritems():
+        for knob_name, knob_value in six.iteritems(wn_settings):
             if knob_name != "file_type":
                 node.knob(knob_name).setValue(knob_value)
 
@@ -230,7 +232,7 @@ class RenderMedia(HookBaseClass):
         :rtype:                 dict
         """
         settings = {}
-        if sys.platform in ["darwin", "win32"]:
+        if sgtk.util.is_windows() or sgtk.util.is_macos():
             settings["file_type"] = "mov"
             if nuke.NUKE_VERSION_MAJOR >= 9:
                 # Nuke 9.0v1 changed the codec knob name to meta_codec and added an encoder knob
@@ -240,7 +242,7 @@ class RenderMedia(HookBaseClass):
             else:
                 settings["codec"] = "jpeg"
 
-        elif sys.platform == "linux2":
+        elif sgtk.util.is_linux():
             if nuke.NUKE_VERSION_MAJOR >= 9:
                 # Nuke 9.0v1 removed ffmpeg and replaced it with the mov64 writer
                 # http://help.thefoundry.co.uk/nuke/9.0/#appendices/appendixc/supported_file_formats.html
