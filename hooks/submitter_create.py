@@ -89,7 +89,7 @@ class SubmitterCreate(HookBaseClass):
         :returns:               The Version Shotgun entity dictionary that was created.
         :rtype:                 dict
 
-        Beause of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
+        Because of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
         """
 
         path_to_media = path_to_movie or path_to_frames
