@@ -67,18 +67,10 @@ class Renderer(object):
         group.begin()
         try:
             # create read node
-#             read = nuke.nodes.Read(name="source", file=path.replace(os.sep, "/"))
-            read = nuke.nodes.Read(name="source")
-            read['file'].fromUserText(path.replace(os.sep, "/"))
+            read = nuke.nodes.Read(name="source", file=path.replace(os.sep, "/"))
             read["on_error"].setValue("black")
-            for item in read.knobs():
-                print item
-            if not read.knob('decoder'):
-                read["first"].setValue(first_frame)
-                read["last"].setValue(last_frame)
-            else:
-                read['frame_mode'].setValue('start at')
-                read['frame'].setValue(str(first_frame))
+            read["first"].setValue(first_frame)
+            read["last"].setValue(last_frame)
             if color_space:
                 read["colorspace"].setValue(color_space)
             
