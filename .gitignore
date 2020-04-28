@@ -25,7 +25,3 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
-
-#PyCharm
-.idea/
-

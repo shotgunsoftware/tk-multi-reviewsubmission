@@ -79,9 +79,8 @@ class Renderer(object):
             else:
                 read['frame_mode'].setValue('start at')
                 read['frame'].setValue(str(first_frame))
-            # if color_space:
-            #     read["colorspace"].setValue(color_space)
-            read["raw"].setValue(True)
+            if color_space:
+                read["colorspace"].setValue(color_space)
             
             # now create the slate/burnin node
             burn = nuke.nodePaste(self._burnin_nk) 
