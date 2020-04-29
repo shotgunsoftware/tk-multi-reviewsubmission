@@ -48,6 +48,21 @@ configuration:
                      as a temporary location for processing before the file is
                      uploaded to Shotgun.
 
+    add_burn_ins:
+        type: bool
+        default_value: true
+        description: Add burn ins when rendering the movie file.
+
+    add_slate:
+        type: bool
+        default_value: true
+        description: Add slate when rendering the movie file.
+
+    resize_movie:
+        type: bool
+        default_value: true
+        description: Reformat rendered movie using given/default width, height.
+
     movie_width:
         type: int
         default_value: 1920
