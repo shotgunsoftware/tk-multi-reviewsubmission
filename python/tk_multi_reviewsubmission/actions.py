@@ -22,7 +22,7 @@ class Actions(object):
 
         if not can_submit:
             raise RuntimeError(
-                "Unable to submit a version to Shotgun given the current configuration"
+                "Unable to submit a version to SG given the current configuration"
             )
 
     def render_and_submit_version(
@@ -142,7 +142,7 @@ class Actions(object):
                 **render_media_hook_args
             )
 
-        dispatch_progress(50, "Creating Shotgun Version and uploading movie")
+        dispatch_progress(50, "Creating SG Version and uploading movie")
 
         submit_hook_args = {
             "path_to_frames": input_path,

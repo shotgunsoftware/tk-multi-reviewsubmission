@@ -202,7 +202,7 @@ class UploaderThread(QtCore.QThread):
                     "sg_uploaded_movie",
                 )
             except Exception as e:
-                self._errors.append("Movie upload to Shotgun failed: %s" % e)
+                self._errors.append("Movie upload to SG failed: %s" % e)
                 upload_error = True
 
         if not self._upload_to_shotgun or upload_error:
@@ -211,4 +211,4 @@ class UploaderThread(QtCore.QThread):
                     "Version", self._version["id"], self._thumbnail_path
                 )
             except Exception as e:
-                self._errors.append("Thumbnail upload to Shotgun failed: %s" % e)
+                self._errors.append("Thumbnail upload to SG failed: %s" % e)
