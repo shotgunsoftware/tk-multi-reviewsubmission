@@ -45,7 +45,7 @@ class SubmitterCreate(HookBaseClass):
             QtGui.QMessageBox(
                 QtGui.QMessageBox.Warning,
                 "Cannot submit to Shotgun",
-                "Shotgun Create is not installed!",
+                "SG Create is not installed!",
                 flags=QtCore.Qt.Dialog
                 | QtCore.Qt.MSWindowsFixedSizeDialogHint
                 | QtCore.Qt.WindowStaysOnTopHint
@@ -100,7 +100,7 @@ class SubmitterCreate(HookBaseClass):
         )
 
         if not ok:
-            raise RuntimeError("Unable to connect to Shotgun Create.")
+            raise RuntimeError("Unable to connect to SG Create.")
 
         client = self.__create_client_module.CreateClient(self.__app.sgtk.shotgun)
 
