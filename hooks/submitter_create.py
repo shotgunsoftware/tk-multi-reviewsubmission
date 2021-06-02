@@ -44,7 +44,7 @@ class SubmitterCreate(HookBaseClass):
 
             QtGui.QMessageBox(
                 QtGui.QMessageBox.Warning,
-                "Cannot submit to Shotgun",
+                "Cannot submit to ShotGrid",
                 "SG Create is not installed!",
                 flags=QtCore.Qt.Dialog
                 | QtCore.Qt.MSWindowsFixedSizeDialogHint

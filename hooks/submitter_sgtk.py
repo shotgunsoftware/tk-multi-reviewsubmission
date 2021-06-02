@@ -41,7 +41,7 @@ class SubmitterSGTK(HookBaseClass):
         if not self._upload_to_shotgun and not self._store_on_disk:
             QtGui.QMessageBox(
                 QtGui.QMessageBox.Warning,
-                "Cannot submit to Shotgun",
+                "Cannot submit to ShotGrid",
                 "Application is not configured to store images on disk or upload to shotgun!",
                 flags=QtCore.Qt.Dialog
                 | QtCore.Qt.MSWindowsFixedSizeDialogHint
