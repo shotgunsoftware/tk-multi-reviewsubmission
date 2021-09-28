@@ -25,9 +25,17 @@ class SubmitterCreate(HookBaseClass):
 
         self.__app = self.parent
 
-        desktopclient_framework = self.load_framework(
-            "tk-framework-desktopclient_v0.x.x"
-        )
+        desktopclient_framework = None
+
+        try:
+            desktopclient_framework = self.load_framework(
+                "tk-framework-desktopclient_v1.x.x"
+            )
+        except sgtk.errors.TankError:
+            desktopclient_framework = self.load_framework(
+                "tk-framework-desktopclient_v0.x.x"
+            )
+
         self.__create_client_module = desktopclient_framework.import_module(
             "create_client"
         )
