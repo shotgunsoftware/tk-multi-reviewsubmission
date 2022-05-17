@@ -17,7 +17,9 @@ class Actions(object):
         self.__app = sgtk.platform.current_bundle()
 
         can_submit = self.__app.execute_hook_method(
-            key="submitter_hook", method_name="can_submit", base_class=None,
+            key="submitter_hook",
+            method_name="can_submit",
+            base_class=None,
         )
 
         if not can_submit:
