@@ -20,10 +20,10 @@ configuration:
     upload_to_shotgun:
         type: bool
         default_value: true
-        description: Should the movie being created be uploaded to ShotGrid
-                     as a version or just kept on disk? Disabling this as well
-                     as the store_on_disk option effectively disables the whole
-                     tool.
+        description: Should the movie being created be uploaded to
+                     Flow Production Tracking as a version or just kept on disk?
+                     Disabling this as well as the store_on_disk option effectively
+                     disables the whole tool.
 
     store_on_disk:
         type: bool
@@ -46,7 +46,7 @@ configuration:
                      resolution of the movie. If the store_on_disk setting is
                      false, this setting will still be required but will be used
                      as a temporary location for processing before the file is
-                     uploaded to ShotGrid.
+                     uploaded to Flow Production Tracking.
 
     movie_width:
         type: int
@@ -90,7 +90,7 @@ configuration:
 
     submitter_hook:
         type: hook
-        description: Implements how media get sent to ShotGrid
+        description: Implements how media get sent to Flow Production Tracking
         default_value: '{self}/submitter_sgtk.py'
 
 # the Shotgun fields that this app needs in order to operate correctly
@@ -98,7 +98,7 @@ requires_shotgun_fields:
 
 # More verbose description of this item
 display_name: "Review Submission"
-description: "Provides functionality to submit media to ShotGrid for review."
+description: "Provides functionality to submit media to Flow Production Tracking for review."
 
 # Required minimum versions for this item to run
 requires_shotgun_version:

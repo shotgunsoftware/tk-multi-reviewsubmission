@@ -41,7 +41,7 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
             menu_caption = "%s..." % display_name
             menu_options = {
                 "short_name": "send_for_review",
-                "description": "Send a version for review using SG Create",
+                "description": "Send a version for review using Create",
                 # dark themed icon for engines that recognize this format
                 "icons": {
                     "dark": {
