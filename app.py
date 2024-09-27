@@ -106,7 +106,7 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
             comment,
             thumbnail_path,
             progress_cb,
-            color_space=None,
+            color_space,
             *args,
             **kwargs
         )
