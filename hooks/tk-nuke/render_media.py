@@ -10,7 +10,6 @@
 
 import sgtk
 import os
-import sys
 import nuke
 
 HookBaseClass = sgtk.get_hook_baseclass()
