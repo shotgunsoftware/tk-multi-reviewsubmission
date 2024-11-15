@@ -23,7 +23,7 @@ class SubmitterSGTK(HookBaseClass):
     """
 
     def __init__(self, *args, **kwargs):
-        super(SubmitterSGTK, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.__app = self.parent
 

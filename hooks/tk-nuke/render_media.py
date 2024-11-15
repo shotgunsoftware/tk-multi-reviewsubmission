@@ -21,7 +21,7 @@ class RenderMedia(HookBaseClass):
     """
 
     def __init__(self, *args, **kwargs):
-        super(RenderMedia, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.__app = self.parent
 
