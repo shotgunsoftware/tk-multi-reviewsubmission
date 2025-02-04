@@ -14,7 +14,6 @@ Sgtk Application for handling Quicktime generation and review submission
 
 import sgtk
 import sgtk.templatekey
-import copy
 import os
 
 
