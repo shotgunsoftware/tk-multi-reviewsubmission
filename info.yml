@@ -104,6 +104,7 @@ description: "Provides functionality to submit media to Flow Production Tracking
 requires_shotgun_version:
 requires_core_version: "v0.19.5"
 requires_engine_version:
+minimum_python_version: "3.9"
 
 supported_engines:
 
