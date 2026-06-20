@@ -138,9 +138,28 @@ class RenderMedia(HookBaseClass):
 
             burn.node("slate_info")["message"].setValue(slate_str)
 
+            # Disable slate expression if not using it
+            if not self.__app.get_setting("add_slate"):
+                chooser_knob = burn.node("slate_or_burnin_chooser")["which"]
+                chooser_knob.setExpression("")
+                chooser_knob.clearAnimated()
+                chooser_knob.setValue(1)
+
+            # Disable burn in texts if not using it
+            if not self.__app.get_setting("add_burn_ins"):
+                for node_name in [
+                    "top_left_text",
+                    "top_right_text",
+                    "bottom_left_text",
+                    "framecounter",
+                ]:
+                    burn.node(node_name)["disable"].setValue(True)
+
             # create a scale node
             scale = self.__create_scale_node(width, height)
             scale.setInput(0, burn)
+            if not self.__app.get_setting("resize_movie"):
+                scale["disable"].setValue(True)
 
             # Create the output node
             output_node = self.__create_output_node(output_path)
